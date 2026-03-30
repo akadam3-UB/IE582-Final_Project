@@ -8,6 +8,8 @@
         * closest to center
         * biggest
         * highest confidence class priority
+     
+    * Could be AI based voice recog. or set of predefined commands to choose from(eg. Follow person in red shirt)(eg. reduce speed of tracking)
     * shows algorithm design
 
 * Autonomous cone / obstacle avoidance
