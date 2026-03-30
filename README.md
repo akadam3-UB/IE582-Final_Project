@@ -1,7 +1,7 @@
 # Introduction to Robotics Final Project
 
 
-### Ideas:
+### Project Proposal Ideas:
 
 * Multi-target prioritization system
     * If multiple objects appear, robot chooses one based on rules(Could be voice):
