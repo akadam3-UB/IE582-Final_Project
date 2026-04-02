@@ -1,4 +1,4 @@
-# Multi-target prioritization system
+# Multi-Target Prioritization System
 
 Team Members:
 - Abhijeet Kadam, akadam3@buffalo.edu
