@@ -39,3 +39,10 @@ Development will use Python together with OpenCV, Ultralytics-based object detec
 - [ ] The robotic car moves toward or follows the selected target.
 - [ ] Voice command correctly selects intended target when enabled.
 - [ ] User can correctly run system to perform intended target tracking/following.
+
+
+## Updates to Proposal
+
+- Understand scene utilizing Vision Language models
+- Natural speech processing using local language model
+- Collaborate with student within class for scene setup
