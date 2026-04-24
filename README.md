@@ -100,7 +100,7 @@ The repo currently contains the following key components:
 ### What Is Not Working Yet
 
 - Live speech input is not yet wired into the tracking loop.
-- The pan/tilt pipeline is not yet fully validated on the physical robot.
+- The pan/tilt pipeline is not yet fully validated on robot.
 - Rich grounding for requests like `"person in the red shirt near the board"` still needs a slower model or custom logic beyond the current basic color estimate.
 - No quantitative robot experiments or final demo results have been collected yet.
 - The Gazebo environment integration is dependent on the shared class lab model being ready enough for project-specific testing.
@@ -132,7 +132,7 @@ The repo currently contains the following key components:
 
 ```bash
 python3 scripts/demo_pan_tilt_pipeline.py --command "track the blue person" --robot-id 1
-python3 -m unittest discover -s tests -v
+python -m pytest
 ```
 
 ## End-To-End Run Paths
