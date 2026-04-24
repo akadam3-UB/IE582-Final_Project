@@ -2,17 +2,16 @@
 
 ## Status Report
 
-**Date:** April 24, 2026  
-**Student:** Abhijeet Kadam  
+**Date:** April 24, 2026 
 **Repo:** [akadam3-UB/IE582-Final_Project](https://github.com/akadam3-UB/IE582-Final_Project)
 
 ### Status Summary
 
-The project direction is now clearly defined, but the work is still in the **early implementation and integration stage**. Most of the progress so far has been in narrowing the scope, analyzing the class pan/tilt interface, choosing the software architecture, and building the initial code scaffold rather than completing full live robot testing.
+The project direction is now clearly defined, but the work is in the **implementation and integration stage**. Most of the progress so far has been in narrowing the scope, analyzing the class pan/tilt interface, choosing the software architecture, and building the initial code scaffold.
 
 ### Project Summary
 
-The project is now focused on a **speech-guided pan/tilt camera tracking system**. The goal is for a user to give a spoken command such as `"track the person in a red shirt"` and have the system select the correct target from a multi-object scene and keep the pan/tilt camera centered on that target.
+The project is now focused on a **command-guided pan/tilt camera tracking system**. The goal is for a user to give a command such as `"track the person in a red shirt"` and have the system select the correct target from a multi-object scene and keep the pan/tilt camera centered on that target.
 
 ### Current Direction After Meeting
 
@@ -28,7 +27,7 @@ The architecture discussed in meeting is:
    - A slower vision-language model such as `Qwen-VL` to help resolve requests like `"the guy in a red shirt"`
    - This model is intended to run only when needed, not on every frame
 4. **Environment**
-   - The project will use the class-wide Gazebo model of the lab as the shared simulation environment
+   - The project will use the class-wide Gazebo model of the Bell 427 as the shared simulation environment
 5. **Control output**
    - The selected tracked target is converted into pan/tilt joint commands for the class robot interface
 
@@ -36,7 +35,7 @@ The architecture discussed in meeting is:
 
 - Refined the project scope from a broader multi-target robotics idea into a more realistic **speech-guided pan/tilt camera tracking system**.
 - Reviewed the class robot software stack and identified the relevant pan/tilt control path, especially the socket-based command interface used by the course demos.
-- Aligned the project plan with the class effort to build a shared Gazebo model of the lab environment for simulation and testing.
+- Aligned the project plan with the class effort to build a shared Gazebo model of the class environment for simulation and testing.
 - Chose the working architecture discussed in meeting:
   - local speech-to-text for spoken commands
   - local LLM for structured command parsing
@@ -54,14 +53,13 @@ The architecture discussed in meeting is:
 
 ### Work Completed Since The Last Meeting
 
-The work completed since the meeting has been mostly preparation and initial implementation:
+The work completed since the meeting has been preparation and initial implementation:
 
 1. Clarified the system architecture and reduced scope to the pan/tilt camera setup.
-2. Studied the class repo to identify how pan/tilt status and command messages are sent.
-3. Defined the division between the fast real-time tracker and the slower grounding model.
-4. Incorporated the shared class Gazebo lab-model effort into the project plan as the intended simulation environment.
-5. Created a first-pass software structure for command parsing, target selection, and control output.
-6. Added local demos and tests so the core logic can be iterated on before full robot integration.
+2. Defined the division between the fast real-time tracker and the slower grounding model.
+3. Incorporated the shared class Gazebo lab-model effort into the project plan as the intended simulation environment.
+4. Created a first-pass software structure for command parsing, target selection, and control output.
+5. Added local demos and tests so the core logic can be iterated on before full robot integration.
 
 ### Current Repo State
 
