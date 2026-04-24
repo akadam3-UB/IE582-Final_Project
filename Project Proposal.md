@@ -1,48 +1,80 @@
-# Multi-Target Prioritization System
+# Speech-Guided Pan/Tilt Target Tracking System
 
 Team Members:
 - Abhijeet Kadam, akadam3@buffalo.edu
 
---- 
+---
 
 ## Project Objective
-Develop a multi-target prioritization and tracking system for a robotic platform such as a pan/tilt camera or robotic car. When multiple objects are present in the camera feed, the system will select a single target using a defined prioritization strategy based on factors such as distance from the image center, object size, detection confidence, and class priority. Once selected, the robot will track the target in real time.
-As an extenstion the system will also support voice based target selection command. The voice command could be 'Target the person in
-red shirt' and the camera will identify person in red shirt based on AI model and track the specific target in a scene with multiple objects.
+
+Develop a speech-guided multi-target tracking system for a **pan/tilt camera platform**. When multiple objects or people appear in the camera feed, the system will accept a spoken request, identify the intended target, and keep the selected target centered in view.
+
+The updated concept is:
+
+1. A user gives a spoken command such as `"track the person in the red shirt"`.
+2. A local speech-to-text model such as `Whisper` converts speech to text.
+3. A lightweight local language model converts the text into a structured command.
+4. A real-time vision stack using `Ultralytics` and persistent tracking IDs selects candidate targets.
+5. A slower vision-language model such as `Qwen-VL` can be used when attribute grounding is needed for descriptions like clothing color.
+6. The class-wide Gazebo model of the lab will be used as the shared simulation environment for testing and development.
+7. The pan/tilt controller moves the camera to keep the selected target centered.
 
 ## Contributions
-This system will add prioratization layer that evaluates all detections and selects the most relevent target within multiple object detections within scene, adding onto the current tracking logic which is effective for single target, but does not address decision-making problem arised due to multiple valid targets appearing in scene. This will also be extended to human-robot interaction by allowing voice to set target.
+
+This project adds a decision-making layer on top of standard object tracking. Instead of simply following the most obvious object, the system attempts to interpret user intent and resolve ambiguity when multiple valid targets are present. The project also combines human-robot interaction with real-time camera control by linking speech, command parsing, object tracking, and pan/tilt actuation in a single pipeline.
 
 ## Project Plan
-The project will integrate a computer vision detecton and tracking pipeline with control system of robotic platform. The first phase will focus on detecting multiple objects, maintaining persistent identities across frames, and computing a target priority score using rule-based logic. The selected target will then be passed to the tracking controller for camera or vehicle motion.
-A secondary phase will add voice-command functionality so that a user can specify the desired target by class or visible attribute.
-Development will use Python together with OpenCV, Ultralytics-based object detection/tracking tools, and speech-recognition modules. Reference material will include course resources and standard computer vision literature such as *Computer Vision: Algorithms and Applications*.
 
-## Milestones/Schedule Checklist
+The project will be organized into four stages:
+
+1. **Pan/tilt tracking loop**
+   - Build the image-space to pan/tilt control loop
+   - Confirm the camera can stay centered on a selected tracked target
+2. **Multi-target prioritization**
+   - Detect and track multiple objects with persistent IDs
+   - Rank candidates based on center proximity, size, confidence, and class priority
+3. **Speech-command interface**
+   - Use local speech-to-text to convert spoken requests into text
+   - Use a local LLM to convert the text into a structured target request
+4. **Attribute-level grounding**
+   - Use a slower VLM only when needed for requests such as `"the guy in a red shirt"`
+   - Keep the VLM out of the real-time loop and use it only for disambiguation
+
+The project will use the shared class Gazebo model of the lab as the main simulation environment before or alongside physical robot testing.
+
+Development will use Python together with OpenCV, `Ultralytics`, local speech-recognition tools, and a pan/tilt control interface from the course codebase. Reference material will include course resources and standard computer vision literature.
+
+## Milestones / Schedule Checklist
+
 - [x] Complete this proposal document.  *Due March 31*
-- [ ] Integrate multi-object detection and persistent target IDs.
-- [ ] Implement prioritization logic based on center proximity, bounding-box size, confidence, and class priority.
-- [ ] Create progress report.  *Due April 21*
-- [ ] Extend the tracking logic to the robotic car platform.
-- [ ] Implement voice-command target selection as an extension feature.
-- [ ] Test and validate.
+- [x] Refine project scope toward a pan/tilt camera system.
+- [x] Create progress report / status report in repo.  *Due April 21*
+- [x] Create initial command parsing, target ranking, and pan/tilt control scaffold.
+- [ ] Integrate live multi-object tracking with persistent target IDs.
+- [ ] Implement live pan/tilt target locking on the class robot interface.
+- [ ] Add speech-to-text input and local LLM command parsing.
+- [ ] Add VLM-based grounding for difficult appearance-based commands.
+- [ ] Integrate and test inside the shared class Gazebo lab model.
+- [ ] Test and validate on real scenes.
 - [ ] Create final presentation.  *Due May 5*
 - [ ] Finalize system documents.
-- [ ] Provide system documentation (README.md).  *Due May 15*
-
+- [ ] Provide final system documentation / README.  *Due May 15*
 
 ## Measures of Success
-- [ ] Vision model detects multiple objects in scene.
-- [ ] System assigns a priority score to each detected target.
-- [ ] Correct target is selected based on prioratization rule.
-- [ ] Pan/tilt camera remains locked on selected target during motion.
-- [ ] The robotic car moves toward or follows the selected target.
-- [ ] Voice command correctly selects intended target when enabled.
-- [ ] User can correctly run system to perform intended target tracking/following.
 
+- [ ] Vision model detects multiple objects in the scene.
+- [ ] System assigns a priority score to candidate targets.
+- [ ] Correct target is selected from a spoken request.
+- [ ] Pan/tilt camera remains locked on the selected target during motion.
+- [ ] Speech input is correctly converted into a usable target command.
+- [ ] VLM grounding improves performance for appearance-based requests.
+- [ ] User can run the system end-to-end on the class pan/tilt setup.
 
-## Updates to Proposal
+## Updates After Meeting
 
-- Understand scene utilizing Vision Language models
-- Natural speech processing using local language model
-- Collaborate with student within class for scene setup
+- Narrow scope to **pan/tilt camera**, not robotic car.
+- Use `Whisper` or similar local STT for spoken commands.
+- Use a local LLM for command parsing.
+- Use `Ultralytics + ByteTrack` style tracking for the fast loop.
+- Use `Qwen-VL` or a similar model only as a slower grounding helper.
+- Use the class-wide Gazebo lab model as the shared simulation environment.
