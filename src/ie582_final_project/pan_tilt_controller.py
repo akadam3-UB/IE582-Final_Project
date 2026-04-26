@@ -20,6 +20,7 @@ class PanTiltControllerConfig:
     tilt_fov_deg: float = 31.6
     gain_scale: float = 1.0
     min_step_deg: float = 0.05
+    max_step_deg: float = 4.0
 
 
 def _clamp(value: float, low: float, high: float) -> float:
@@ -111,12 +112,14 @@ class PanTiltController:
         }
 
         if pan_joint is not None and abs(error_x) > self.config.pan_deadband_px:
-            pan_delta = (
+            raw_pan_delta = (
                 (error_x / (frame_w / 2.0))
                 * (self.config.pan_fov_deg / 2.0)
                 * self.config.gain_scale
                 * speed_scale
             )
+            pan_delta = _clamp(raw_pan_delta, -self.config.max_step_deg, self.config.max_step_deg)
+            debug["pan_delta_deg_raw"] = float(raw_pan_delta)
             debug["pan_delta_deg"] = float(pan_delta)
             if abs(pan_delta) >= self.config.min_step_deg:
                 pan_target = _clamp(
@@ -127,12 +130,14 @@ class PanTiltController:
                 cmd[self.config.pan_joint_name] = round(pan_target, 4)
 
         if tilt_joint is not None and abs(error_y) > self.config.tilt_deadband_px:
-            tilt_delta = (
+            raw_tilt_delta = (
                 (error_y / (frame_h / 2.0))
                 * (self.config.tilt_fov_deg / 2.0)
                 * self.config.gain_scale
                 * speed_scale
             )
+            tilt_delta = _clamp(raw_tilt_delta, -self.config.max_step_deg, self.config.max_step_deg)
+            debug["tilt_delta_deg_raw"] = float(raw_tilt_delta)
             debug["tilt_delta_deg"] = float(tilt_delta)
             if abs(tilt_delta) >= self.config.min_step_deg:
                 tilt_target = _clamp(

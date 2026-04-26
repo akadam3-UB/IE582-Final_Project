@@ -2,16 +2,24 @@
 
 ## Status Report
 
-**Date:** April 24, 2026 
+**Date:** April 24, 2026  
+**Student:** Abhijeet Kadam  
 **Repo:** [akadam3-UB/IE582-Final_Project](https://github.com/akadam3-UB/IE582-Final_Project)
 
 ### Status Summary
 
-The project direction is now clearly defined, but the work is in the **implementation and integration stage**. Most of the progress so far has been in narrowing the scope, analyzing the class pan/tilt interface, choosing the software architecture, and building the initial code scaffold.
+The project direction is now clearly defined, but the work is still in the **early implementation and integration stage**. Most of the progress so far has been in narrowing the scope, analyzing the class pan/tilt interface, choosing the software architecture, and building the initial code scaffold rather than completing full live robot testing.
+
+### Deep Design Docs
+
+For a more detailed engineering view of the system, see:
+
+- [docs/Technical Design.md](docs/Technical%20Design.md)
+- [docs/Evaluation Plan.md](docs/Evaluation%20Plan.md)
 
 ### Project Summary
 
-The project is now focused on a **command-guided pan/tilt camera tracking system**. The goal is for a user to give a command such as `"track the person in a red shirt"` and have the system select the correct target from a multi-object scene and keep the pan/tilt camera centered on that target.
+The project is now focused on a **speech-guided pan/tilt camera tracking system**. The goal is for a user to give a spoken command such as `"track the person in a red shirt"` and have the system select the correct target from a multi-object scene and keep the pan/tilt camera centered on that target.
 
 ### Current Direction After Meeting
 
@@ -27,7 +35,7 @@ The architecture discussed in meeting is:
    - A slower vision-language model such as `Qwen-VL` to help resolve requests like `"the guy in a red shirt"`
    - This model is intended to run only when needed, not on every frame
 4. **Environment**
-   - The project will use the class-wide Gazebo model of the Bell 427 as the shared simulation environment
+   - The project will use the class-wide Gazebo model of the lab as the shared simulation environment
 5. **Control output**
    - The selected tracked target is converted into pan/tilt joint commands for the class robot interface
 
@@ -35,7 +43,7 @@ The architecture discussed in meeting is:
 
 - Refined the project scope from a broader multi-target robotics idea into a more realistic **speech-guided pan/tilt camera tracking system**.
 - Reviewed the class robot software stack and identified the relevant pan/tilt control path, especially the socket-based command interface used by the course demos.
-- Aligned the project plan with the class effort to build a shared Gazebo model of the class environment for simulation and testing.
+- Aligned the project plan with the class effort to build a shared Gazebo model of the lab environment for simulation and testing.
 - Chose the working architecture discussed in meeting:
   - local speech-to-text for spoken commands
   - local LLM for structured command parsing
@@ -53,13 +61,14 @@ The architecture discussed in meeting is:
 
 ### Work Completed Since The Last Meeting
 
-The work completed since the meeting has been preparation and initial implementation:
+The work completed since the meeting has been mostly preparation and initial implementation:
 
 1. Clarified the system architecture and reduced scope to the pan/tilt camera setup.
-2. Defined the division between the fast real-time tracker and the slower grounding model.
-3. Incorporated the shared class Gazebo lab-model effort into the project plan as the intended simulation environment.
-4. Created a first-pass software structure for command parsing, target selection, and control output.
-5. Added local demos and tests so the core logic can be iterated on before full robot integration.
+2. Studied the class repo to identify how pan/tilt status and command messages are sent.
+3. Defined the division between the fast real-time tracker and the slower grounding model.
+4. Incorporated the shared class Gazebo lab-model effort into the project plan as the intended simulation environment.
+5. Created a first-pass software structure for command parsing, target selection, and control output.
+6. Added local demos and tests so the core logic can be iterated on before full robot integration.
 
 ### Current Repo State
 
@@ -72,7 +81,7 @@ The repo currently contains the following key components:
 - [src/ie582_final_project/pan_tilt_controller.py](src/ie582_final_project/pan_tilt_controller.py)
   - image error to pan/tilt joint command conversion
 - [src/ie582_final_project/pan_tilt_pipeline.py](src/ie582_final_project/pan_tilt_pipeline.py)
-  - end-to-end selection and control loop with target lock across frames
+  - end-to-end selection and control loop with target lock, hysteresis, and minimum acceptance logic
 - [src/ie582_final_project/vision.py](src/ie582_final_project/vision.py)
   - converts tracker outputs into project detections and estimates simple attributes like dominant color
 - [scripts/pan_tilt_socket_client.py](scripts/pan_tilt_socket_client.py)
@@ -88,8 +97,10 @@ The repo currently contains the following key components:
 - Commands can now include simple spatial hints such as `left`, `right`, or `center`.
 - Multiple detections can be ranked and the best target can be selected.
 - The selector now keeps preference for the current tracked ID so the camera is less likely to bounce between similar targets.
+- The pan/tilt pipeline now uses an explicit switch margin, so it only changes targets when a new candidate is clearly better rather than merely slightly better.
 - Simple color grounding now works directly from the camera image for detections, which supports commands such as `"track the red cone"` without needing a VLM on every frame.
 - Pan/tilt output can be generated in the same command format used by the class pan/tilt socket interface.
+- The controller now rate-limits large pan/tilt corrections so the design is closer to a stable servoing loop instead of an unrestricted jump controller.
 - The class pan/tilt socket client can now update commands while running from a text file, audio file, or optional VLM JSON file.
 - A Mac-friendly microphone listener path now exists so spoken commands can update `runtime_command.txt` live on a MacBook Air M2.
 - A Gazebo pan/tilt tracker script now exists for the shared classroom world using the simulated pan/tilt camera topic.
@@ -98,7 +109,7 @@ The repo currently contains the following key components:
 ### What Is Not Working Yet
 
 - Live speech input is not yet wired into the tracking loop.
-- The pan/tilt pipeline is not yet fully validated on robot.
+- The pan/tilt pipeline is not yet fully validated on the physical robot.
 - Rich grounding for requests like `"person in the red shirt near the board"` still needs a slower model or custom logic beyond the current basic color estimate.
 - No quantitative robot experiments or final demo results have been collected yet.
 - The Gazebo environment integration is dependent on the shared class lab model being ready enough for project-specific testing.
@@ -119,6 +130,19 @@ The repo currently contains the following key components:
 - I need to confirm the timeline and readiness of the shared class Gazebo lab model so I can use it effectively for project testing.
 - The main remaining risk is integration time: the core logic exists in scaffold form, but the physical robot and speech components still need to be connected and tested together.
 
+### Current Technical Position
+
+The project is best understood as:
+
+1. **implemented architecture**
+   - command parser, selector, controller, runtime scripts, and tests exist
+2. **partially grounded perception**
+   - fast image attributes such as color and left/right region exist
+3. **not yet fully integrated**
+   - the remaining work is live validation, richer grounding, and stored evaluation results
+
+That means the repo has moved beyond an idea, but it is not yet a finished end-to-end robotics system.
+
 ### Next Steps
 
 1. Integrate the pan/tilt pipeline into the class control code path.
@@ -130,7 +154,7 @@ The repo currently contains the following key components:
 
 ```bash
 python3 scripts/demo_pan_tilt_pipeline.py --command "track the blue person" --robot-id 1
-python -m pytest
+python3 -m unittest discover -s tests -v
 ```
 
 ## End-To-End Run Paths
@@ -163,18 +187,75 @@ python3 scripts/pan_tilt_gazebo_tracker.py \
 
 If `runtime_command.txt` changes, the active command is updated. If `runtime_vlm.json` changes, the parser will merge the VLM grounding output into the active intent. An audio file path can also be supplied with `--audio-file` if a local Whisper installation is available.
 
+## Temporary Gazebo Test World
+
+While the shared classroom world is still under development, this repo now includes a temporary validation world:
+
+- [worlds/pantilt_people_test.sdf](worlds/pantilt_people_test.sdf)
+  - a pan/tilt camera model named `pantilt`
+  - three human actors arranged across the scene
+  - matching joint controller topics for `pan_joint` and `tilt_joint`
+- [scripts/run_gazebo_test_world.sh](scripts/run_gazebo_test_world.sh)
+  - launches the temporary world with the correct `gz sim` flags
+- [scripts/run_gazebo_test_tracker.sh](scripts/run_gazebo_test_tracker.sh)
+  - launches a pose-based tracker against that world using the project-local `.venv`
+- [scripts/pan_tilt_gazebo_pose_tracker.py](scripts/pan_tilt_gazebo_pose_tracker.py)
+  - uses Gazebo ground-truth actor poses as a stable simulation fallback on this Mac
+
+This temporary world is intended to validate:
+
+1. Gazebo camera topic publishing
+2. multi-target selection and target lock in a multi-person scene
+3. left/right command selection
+4. pan/tilt command publishing back into Gazebo
+
+It is **not** the final classroom world, and it is not meant to prove richer grounding such as `"the person in the red shirt"` yet.
+
+On this Mac, the temporary world currently uses a **pose-based simulation fallback** for the demo tracker because `Ultralytics` prediction is unstable in the Gazebo-compatible Python 3.14 environment. The full YOLO-based Gazebo tracker still exists in [scripts/pan_tilt_gazebo_tracker.py](scripts/pan_tilt_gazebo_tracker.py), but the temporary validation flow uses Gazebo actor poses so that command parsing, target selection, and pan/tilt control can still be demonstrated reliably.
+
+Recommended validation flow from the project root:
+
+```bash
+source .venv/bin/activate
+./scripts/run_gazebo_test_world.sh
+```
+
+The launcher defaults to a **headless server** run with `opengl` as the render backend, because that is more stable on this Mac than the default GUI render path. If needed, try:
+
+```bash
+GZ_RENDER_BACKEND=metal ./scripts/run_gazebo_test_world.sh
+```
+
+In a second terminal:
+
+```bash
+source .venv/bin/activate
+echo "track the person on the left" > runtime_command.txt
+./scripts/run_gazebo_test_tracker.sh
+```
+
+Then update the active target while the tracker is running:
+
+```bash
+echo "track the person on the right" > runtime_command.txt
+echo "track the person" > runtime_command.txt
+```
+
+On the first launch, Gazebo may need to download the actor assets from Gazebo Fuel.
+
 ## MacBook Air M2 Speech Path
 
 Recommended setup for Apple Silicon:
 
 1. Use `mlx-whisper` as the speech backend when possible.
 2. Use `ffmpeg` with macOS `avfoundation` to capture microphone snippets.
-3. Feed the resulting transcribed command text into `runtime_command.txt`.
+3. Use the project-local `.venv` for Gazebo-facing work, because it matches the local Gazebo Python bindings on this Mac.
+4. Feed the resulting transcribed command text into `runtime_command.txt`.
 
 List available microphone devices:
 
 ```bash
-python3 scripts/mic_command_listener.py --list-devices
+.venv/bin/python scripts/mic_command_listener.py --list-devices
 ```
 
 Run the microphone listener in one terminal:
@@ -208,4 +289,4 @@ For the class host socket path instead of Gazebo:
   --whisper-model base
 ```
 
-If `mlx-whisper` is installed, the code will prefer it automatically on Apple Silicon. If not, it will fall back to the regular `whisper` package.
+The project-local `.venv` now contains both `mlx-whisper` and `openai-whisper`. The code will prefer `mlx-whisper` on Apple Silicon and fall back to the regular `whisper` package if Metal is unavailable.

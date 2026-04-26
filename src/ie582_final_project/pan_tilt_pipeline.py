@@ -2,12 +2,26 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Iterable, List, Mapping, Optional, Tuple
 
 from .command_parser import parse_command
 from .models import CommandIntent, Detection, PanTiltCommand, TargetScore
 from .pan_tilt_controller import PanTiltController, PanTiltControllerConfig
-from .target_selector import TargetSelectorConfig, rank_targets, select_target
+from .target_selector import TargetSelectorConfig, rank_targets
+
+
+@dataclass
+class PanTiltPipelineConfig:
+    """Pipeline-level behavior for selection stability.
+
+    ``min_accept_score`` avoids committing to weak targets when the ranking signal
+    is poor. ``switch_margin`` adds hysteresis so we do not bounce between nearly
+    equivalent candidates when multiple objects satisfy the same command.
+    """
+
+    min_accept_score: float = 0.20
+    switch_margin: float = 0.12
 
 
 class PanTiltTargetingPipeline:
@@ -21,9 +35,11 @@ class PanTiltTargetingPipeline:
         self,
         selector_config: Optional[TargetSelectorConfig] = None,
         controller_config: Optional[PanTiltControllerConfig] = None,
+        pipeline_config: Optional[PanTiltPipelineConfig] = None,
     ) -> None:
         self.selector_config = selector_config or TargetSelectorConfig()
         self.controller = PanTiltController(controller_config)
+        self.pipeline_config = pipeline_config or PanTiltPipelineConfig()
 
         self.intent = CommandIntent(action="track")
         self.last_ranked: List[TargetScore] = []
@@ -35,6 +51,32 @@ class PanTiltTargetingPipeline:
         self.intent = parse_command(command_text, vlm_text=vlm_text)
         self.active_track_id = self.intent.target_track_id
         return self.intent
+
+    def _stabilize_selection(self, ranked: List[TargetScore]) -> Optional[TargetScore]:
+        if not ranked:
+            return None
+
+        best = ranked[0]
+        if best.total < self.pipeline_config.min_accept_score:
+            return None
+
+        if self.active_track_id is None:
+            return best
+
+        active_score = next(
+            (score for score in ranked if score.detection.track_id == self.active_track_id),
+            None,
+        )
+        if active_score is None:
+            return best
+
+        if best.detection.track_id == self.active_track_id:
+            return best
+
+        if best.total >= active_score.total + self.pipeline_config.switch_margin:
+            return best
+
+        return active_score
 
     def step(
         self,
@@ -59,25 +101,14 @@ class PanTiltTargetingPipeline:
             self.active_track_id = None
             return cmd, None, []
 
-        sticky_track_id = None
-        if self.intent.target_track_id is None:
-            sticky_track_id = self.active_track_id
-
-        best = select_target(
-            detections=detections,
-            intent=self.intent,
-            frame_shape=frame_shape,
-            config=self.selector_config,
-            sticky_track_id=sticky_track_id,
-        )
-
         self.last_ranked = rank_targets(
             detections=detections,
             intent=self.intent,
             frame_shape=frame_shape,
             config=self.selector_config,
-            sticky_track_id=sticky_track_id,
+            sticky_track_id=self.active_track_id if self.intent.target_track_id is None else None,
         )
+        best = self._stabilize_selection(self.last_ranked)
 
         if best is not None and best.detection.track_id is not None:
             self.active_track_id = best.detection.track_id

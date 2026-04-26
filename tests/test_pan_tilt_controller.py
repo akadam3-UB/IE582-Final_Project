@@ -10,7 +10,7 @@ if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 from ie582_final_project.models import BoundingBox, Detection
-from ie582_final_project.pan_tilt_controller import PanTiltController
+from ie582_final_project.pan_tilt_controller import PanTiltController, PanTiltControllerConfig
 
 
 class PanTiltControllerTests(unittest.TestCase):
@@ -101,6 +101,19 @@ class PanTiltControllerTests(unittest.TestCase):
         self.assertEqual(payload[0], 4)
         self.assertEqual(len(payload[1]), 1)
         self.assertIsInstance(payload[1][0], dict)
+
+    def test_large_error_is_rate_limited(self) -> None:
+        controller = PanTiltController(PanTiltControllerConfig(max_step_deg=1.0))
+        target = Detection(
+            label="person",
+            confidence=0.9,
+            track_id=5,
+            bbox=BoundingBox(0, 0, 40, 80),
+        )
+        cmd = controller.compute_command(target, (480, 640), self.joints, robot_id=1)
+        self.assertIn("arm_shoulder_pan_joint", cmd.joint_targets)
+        self.assertLessEqual(cmd.joint_targets["arm_shoulder_pan_joint"] - 57.0, 1.0)
+        self.assertGreater(cmd.debug["pan_delta_deg_raw"], cmd.debug["pan_delta_deg"])
 
 
 if __name__ == "__main__":

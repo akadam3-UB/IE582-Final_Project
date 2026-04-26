@@ -23,6 +23,8 @@ The updated concept is:
 
 This project adds a decision-making layer on top of standard object tracking. Instead of simply following the most obvious object, the system attempts to interpret user intent and resolve ambiguity when multiple valid targets are present. The project also combines human-robot interaction with real-time camera control by linking speech, command parsing, object tracking, and pan/tilt actuation in a single pipeline.
 
+More specifically, the project contribution is not only tracking accuracy. It is the **bridge between language and visual servoing**. A basic tracker can center an already known target. This project adds the reasoning step that decides *which* visible target is the correct one to follow.
+
 ## Project Plan
 
 The project will be organized into four stages:
@@ -39,6 +41,13 @@ The project will be organized into four stages:
 4. **Attribute-level grounding**
    - Use a slower VLM only when needed for requests such as `"the guy in a red shirt"`
    - Keep the VLM out of the real-time loop and use it only for disambiguation
+
+The design intentionally separates a fast loop and a slow loop:
+
+- the fast loop handles detection, tracking, ranking, and pan/tilt control
+- the slow loop handles speech, command parsing, and optional VLM reasoning
+
+This separation is important because real-time control should remain lightweight and predictable, while heavier grounding models should only refine intent when the command is ambiguous.
 
 The project will use the shared class Gazebo model of the lab as the main simulation environment before or alongside physical robot testing.
 
@@ -69,6 +78,12 @@ Development will use Python together with OpenCV, `Ultralytics`, local speech-re
 - [ ] Speech input is correctly converted into a usable target command.
 - [ ] VLM grounding improves performance for appearance-based requests.
 - [ ] User can run the system end-to-end on the class pan/tilt setup.
+
+Success should also be judged qualitatively on stability:
+
+- the camera should not thrash between two nearly equivalent targets
+- target switches should happen only when a new candidate is clearly better
+- commands such as `"left"` or `"red"` should improve target selection before the slower VLM path is needed
 
 ## Updates After Meeting
 

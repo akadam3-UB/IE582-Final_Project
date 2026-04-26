@@ -5,21 +5,29 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 import pathlib
 import signal
 import sys
+import threading
 import time
-from typing import Optional
+from typing import Optional, Tuple
+
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
+import cv2
+import numpy as np
 
 try:
-    import ub_camera
+    from ultralytics import YOLO
 except ImportError as exc:
     raise SystemExit(
-        "Missing dependency. Install ub_code or make it importable before running: "
-        f"{exc}"
-    )
+        "Missing Ultralytics. Install the project dependencies in the project .venv "
+        "before running the Gazebo tracker."
+    ) from exc
 
 try:
+    from gz.msgs10 import image_pb2
     from gz.msgs10.double_pb2 import Double
     from gz.transport13 import Node
 except ImportError as exc:
@@ -41,9 +49,13 @@ from ie582_final_project.vision import build_scene_summary, ultralytics_results_
 
 DEFAULT_TOPIC = "/world/default/model/pantilt/link/tilt_link/sensor/camera/image"
 
-
-def _clamp(value: float, low: float, high: float) -> float:
-    return max(low, min(high, value))
+_PIXEL_FORMAT_CHANNELS = {
+    image_pb2.L_INT8: 1,
+    image_pb2.RGB_INT8: 3,
+    image_pb2.RGBA_INT8: 4,
+    image_pb2.BGRA_INT8: 4,
+    image_pb2.BGR_INT8: 3,
+}
 
 
 class GazeboPanTiltTracker:
@@ -78,6 +90,21 @@ class GazeboPanTiltTracker:
         self.yolo_model_name = yolo_model_name
         self.conf_threshold = conf_threshold
         self._shutdown = False
+
+        self.res_rows = rows
+        self.res_cols = cols
+        self.fps = fps
+        self.stream_port = stream_port
+        self.protocol = protocol
+        self.no_stream = no_stream
+
+        self._frame_lock = threading.Lock()
+        self._latest_frame: Optional[np.ndarray] = None
+        self._latest_frame_index = 0
+        self._processed_frame_index = 0
+        self._received_frame = False
+        self._warned_formats: set[int] = set()
+        self._last_scene_summary = ""
 
         self.command_inputs = RuntimeCommandInputs(
             initial_command=command_text,
@@ -120,35 +147,15 @@ class GazeboPanTiltTracker:
             Double,
         )
 
-        self.camera = ub_camera.CameraGazebo(
-            topic=self.topic,
-            paramDict={
-                "res_rows": rows,
-                "res_cols": cols,
-                "fps_target": fps,
-                "outputPort": stream_port,
-            },
-        )
-        self.camera.start(
-            startStream=not no_stream,
-            port=stream_port,
-            protocol=protocol,
-        )
-
-        self.camera.addUltralytics(
-            idName="track",
-            model_name=self.yolo_model_name,
-            conf_threshold=self.conf_threshold,
-            postFunction=self._on_track_results,
-            postFunctionArgs={},
-            drawBox=True,
-            drawLabel=True,
-        )
-
+        self.model = YOLO(self.yolo_model_name)
+        self.node.subscribe(image_pb2.Image, self.topic, self._on_image_message)
         self._install_signal_handlers()
 
-        if not no_stream:
-            print(f"Stream URL: {self.camera.streamURL}")
+        if not self.no_stream:
+            print(
+                "Note: direct Gazebo mode processes frames internally and does not "
+                "rebroadcast an MJPEG/WebSocket stream."
+            )
         print(f"Subscribed to Gazebo topic: {self.topic}")
         print(f"Publishing pan/tilt commands for model: {self.gazebo_model_name}")
 
@@ -183,21 +190,85 @@ class GazeboPanTiltTracker:
 
         self.joint_state[joint_name]["angle_deg"] = angle_deg
 
-    def _on_track_results(self, args_dict: dict) -> None:
-        self._refresh_command_inputs()
+    def _decode_image_message(self, msg: image_pb2.Image) -> Optional[np.ndarray]:
+        width = int(msg.width)
+        height = int(msg.height)
+        pixel_format = int(msg.pixel_format_type)
+        channels = _PIXEL_FORMAT_CHANNELS.get(pixel_format)
+        if width <= 0 or height <= 0 or channels is None:
+            if pixel_format not in self._warned_formats:
+                self._warned_formats.add(pixel_format)
+                print(
+                    f"[camera] Unsupported Gazebo pixel format {pixel_format}; "
+                    "expected RGB/BGR/RGBA/BGRA/L_INT8."
+                )
+            return None
 
-        try:
-            frame = self.camera.getFrameCopy()
-        except Exception:
-            frame = None
+        row_bytes = int(msg.step) if int(msg.step) > 0 else width * channels
+        raw = np.frombuffer(msg.data, dtype=np.uint8)
+        if raw.size < height * row_bytes:
+            return None
 
-        detections = ultralytics_results_to_detections(args_dict["results"], frame=frame)
-        if not detections:
+        rows = raw[: height * row_bytes].reshape(height, row_bytes)
+        packed = rows[:, : width * channels]
+
+        if pixel_format == image_pb2.L_INT8:
+            gray = packed.reshape(height, width).copy()
+            return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+
+        frame = packed.reshape(height, width, channels)
+        if pixel_format == image_pb2.RGB_INT8:
+            return frame[:, :, ::-1].copy()
+        if pixel_format == image_pb2.BGR_INT8:
+            return frame.copy()
+        if pixel_format == image_pb2.RGBA_INT8:
+            return cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
+        if pixel_format == image_pb2.BGRA_INT8:
+            return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+        return None
+
+    def _on_image_message(self, msg: image_pb2.Image) -> None:
+        frame = self._decode_image_message(msg)
+        if frame is None:
             return
+
+        with self._frame_lock:
+            self._latest_frame = frame
+            self._latest_frame_index += 1
+            self.res_rows, self.res_cols = frame.shape[:2]
+            self._received_frame = True
+
+    def _get_latest_frame(self) -> Tuple[Optional[np.ndarray], int]:
+        with self._frame_lock:
+            if self._latest_frame is None:
+                return None, self._latest_frame_index
+            return self._latest_frame.copy(), self._latest_frame_index
+
+    def _process_latest_frame(self) -> bool:
+        frame, frame_index = self._get_latest_frame()
+        if frame is None or frame_index == self._processed_frame_index:
+            return False
+
+        self._processed_frame_index = frame_index
+        try:
+            results = self.model.track(
+                source=frame,
+                conf=self.conf_threshold,
+                persist=True,
+                verbose=False,
+            )
+        except Exception as exc:
+            print(f"[tracking] Ultralytics inference failed: {exc}")
+            time.sleep(0.5)
+            return False
+
+        detections = ultralytics_results_to_detections(results, frame=frame)
+        if not detections:
+            return True
 
         cmd, best, _ = self.pipeline.step(
             detections=detections,
-            frame_shape=(self.camera.res_rows, self.camera.res_cols),
+            frame_shape=frame.shape[:2],
             joint_state=self.joint_state,
             robot_id=None,
         )
@@ -205,26 +276,34 @@ class GazeboPanTiltTracker:
         for joint_name, angle_deg in cmd.joint_targets.items():
             self._publish_joint_command(joint_name, angle_deg)
 
+        scene_summary = build_scene_summary(detections, frame_width=frame.shape[1])
         if best is not None:
             print(
                 f"target id={best.detection.track_id} label={best.detection.label} "
                 f"score={best.total:.3f} cmd={cmd.joint_targets}"
             )
-            print(f"[scene] {build_scene_summary(detections, frame_width=self.camera.res_cols)}")
+        if scene_summary != self._last_scene_summary:
+            print(f"[scene] {scene_summary}")
+            self._last_scene_summary = scene_summary
+        return True
 
     def run(self) -> None:
+        waiting_logged = False
         while not self._shutdown:
             self._refresh_command_inputs()
-            time.sleep(0.2)
+            processed = self._process_latest_frame()
+            if processed:
+                waiting_logged = False
+                continue
+
+            if not self._received_frame and not waiting_logged:
+                print(f"Waiting for frames on {self.topic} ...")
+                waiting_logged = True
+            time.sleep(0.05)
 
     def shutdown(self) -> None:
         try:
-            if "track" in self.camera.ultralytics:
-                self.camera.ultralytics["track"].stop()
-        except Exception:
-            pass
-        try:
-            self.camera.shutdown()
+            self.node.unsubscribe(self.topic)
         except Exception:
             pass
 

@@ -12,7 +12,7 @@ from .models import (
     TargetScore,
 )
 from .pan_tilt_controller import PanTiltController, PanTiltControllerConfig
-from .pan_tilt_pipeline import PanTiltTargetingPipeline
+from .pan_tilt_pipeline import PanTiltPipelineConfig, PanTiltTargetingPipeline
 from .pipeline import MultiTargetPipeline
 from .runtime_inputs import (
     FFmpegMicrophoneRecorder,
@@ -40,6 +40,7 @@ __all__ = [
     "DriveControllerConfig",
     "PanTiltController",
     "PanTiltControllerConfig",
+    "PanTiltPipelineConfig",
     "PanTiltTargetingPipeline",
     "FFmpegMicrophoneRecorder",
     "RuntimeCommandInputs",
