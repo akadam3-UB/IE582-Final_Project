@@ -1,0 +1,156 @@
+<?xml version="1.0" ?>
+<sdf version="1.10">
+  <world name="bell_hall_fourth_floor">
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+
+    <gravity>0 0 -9.8</gravity>
+
+    <scene>
+      <ambient>0.72 0.72 0.72 1</ambient>
+      <background>0.84 0.88 0.92 1</background>
+      <shadows>true</shadows>
+      <grid>false</grid>
+    </scene>
+
+    <gui fullscreen="0">
+      <camera name="user_camera">
+        <pose>3 -42 42 1.05 0 0</pose>
+      </camera>
+    </gui>
+
+    <light name="sun" type="directional">
+      <pose>0 0 20 0 0 0</pose>
+      <diffuse>1.0 1.0 0.95 1</diffuse>
+      <specular>0.25 0.25 0.22 1</specular>
+      <direction>-0.4 0.25 -1</direction>
+    </light>
+
+    <light name="north_hall_light" type="point">
+      <pose>0 6.0 2.6 0 0 0</pose>
+      <diffuse>0.9 0.86 0.74 1</diffuse>
+      <specular>0.12 0.12 0.1 1</specular>
+      <attenuation><range>20</range><constant>0.55</constant><linear>0.045</linear><quadratic>0.01</quadratic></attenuation>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <light name="south_hall_light" type="point">
+      <pose>0 -9.0 2.6 0 0 0</pose>
+      <diffuse>0.9 0.86 0.74 1</diffuse>
+      <specular>0.12 0.12 0.1 1</specular>
+      <attenuation><range>22</range><constant>0.55</constant><linear>0.045</linear><quadratic>0.01</quadratic></attenuation>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <light name="east_hall_light" type="point">
+      <pose>20 1.5 2.6 0 0 0</pose>
+      <diffuse>0.9 0.86 0.74 1</diffuse>
+      <specular>0.12 0.12 0.1 1</specular>
+      <attenuation><range>16</range><constant>0.55</constant><linear>0.045</linear><quadratic>0.01</quadratic></attenuation>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <!-- Approximate 4th-floor footprint traced from the Autodesk Viewer PDF screenshot.
+         The screenshot is raster, so this is an extruded floor-plan approximation.
+         Scale is anchored to the existing Room 427 model dimensions: 24.2 m x 6.54 m. -->
+    <model name="fourth_floor_layout">
+      <static>true</static>
+
+      <link name="top_room_floor">
+        <pose>-2.75 12.35 -0.0125 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>45.5 8.5 0.025</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>45.5 8.5 0.025</size></box></geometry><material><ambient>0.58 0.58 0.53 1</ambient><diffuse>0.64 0.64 0.58 1</diffuse><specular>0.04 0.04 0.035 1</specular></material></visual>
+      </link>
+
+      <link name="north_corridor_c400_floor">
+        <pose>-3.0 6.35 -0.0125 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>45.0 3.7 0.025</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>45.0 3.7 0.025</size></box></geometry><material><ambient>0.50 0.52 0.50 1</ambient><diffuse>0.56 0.58 0.55 1</diffuse><specular>0.04 0.04 0.035 1</specular></material></visual>
+      </link>
+
+      <link name="left_office_stack_floor">
+        <pose>-21.2 -3.0 -0.0125 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>5.5 22.4 0.025</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>5.5 22.4 0.025</size></box></geometry><material><ambient>0.58 0.58 0.53 1</ambient><diffuse>0.64 0.64 0.58 1</diffuse><specular>0.04 0.04 0.035 1</specular></material></visual>
+      </link>
+
+      <link name="stair_elevator_core_floor">
+        <pose>-16.5 -2.8 -0.0125 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>7.0 15.8 0.025</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>7.0 15.8 0.025</size></box></geometry><material><ambient>0.58 0.58 0.53 1</ambient><diffuse>0.64 0.64 0.58 1</diffuse><specular>0.04 0.04 0.035 1</specular></material></visual>
+      </link>
+
+      <link name="southwest_c415_floor">
+        <pose>-11.5 -13.65 -0.0125 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>17.0 5.9 0.025</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>17.0 5.9 0.025</size></box></geometry><material><ambient>0.58 0.58 0.53 1</ambient><diffuse>0.64 0.64 0.58 1</diffuse><specular>0.04 0.04 0.035 1</specular></material></visual>
+      </link>
+
+      <link name="center_rooms_floor">
+        <pose>0.6 -1.45 -0.0125 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>27.2 12.1 0.025</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>27.2 12.1 0.025</size></box></geometry><material><ambient>0.58 0.58 0.53 1</ambient><diffuse>0.64 0.64 0.58 1</diffuse><specular>0.04 0.04 0.035 1</specular></material></visual>
+      </link>
+
+      <link name="south_corridor_c427_floor">
+        <pose>2.6 -9.1 -0.0125 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>31.2 3.2 0.025</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>31.2 3.2 0.025</size></box></geometry><material><ambient>0.50 0.52 0.50 1</ambient><diffuse>0.56 0.58 0.55 1</diffuse><specular>0.04 0.04 0.035 1</specular></material></visual>
+      </link>
+
+      <link name="room_427_floor">
+        <pose>5.0 -13.35 -0.0125 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>24.2 6.54 0.025</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>24.2 6.54 0.025</size></box></geometry><material><ambient>0.22 0.22 0.21 1</ambient><diffuse>0.30 0.30 0.28 1</diffuse><specular>0.08 0.08 0.07 1</specular></material></visual>
+      </link>
+
+      <link name="east_rooms_floor">
+        <pose>19.85 -4.2 -0.0125 0 0 0</pose>
+        <collision name="collision"><geometry><box><size>11.3 24.8 0.025</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>11.3 24.8 0.025</size></box></geometry><material><ambient>0.58 0.58 0.53 1</ambient><diffuse>0.64 0.64 0.58 1</diffuse><specular>0.04 0.04 0.035 1</specular></material></visual>
+      </link>
+
+      <!-- Outer envelope and bridge/stair wings -->
+      <link name="wall_north_main"><pose>-2.75 16.6 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>45.5 0.10 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>45.5 0.10 1.2</size></box></geometry><material><ambient>0.82 0.82 0.78 1</ambient><diffuse>0.86 0.86 0.82 1</diffuse></material></visual></link>
+      <link name="wall_south_main"><pose>0 -16.62 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>51.0 0.10 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>51.0 0.10 1.2</size></box></geometry><material><ambient>0.82 0.82 0.78 1</ambient><diffuse>0.86 0.86 0.82 1</diffuse></material></visual></link>
+      <link name="wall_west_main"><pose>-25.5 0 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 33.2 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 33.2 1.2</size></box></geometry><material><ambient>0.82 0.82 0.78 1</ambient><diffuse>0.86 0.86 0.82 1</diffuse></material></visual></link>
+      <link name="wall_east_lower"><pose>25.5 -5.4 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 22.4 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 22.4 1.2</size></box></geometry><material><ambient>0.82 0.82 0.78 1</ambient><diffuse>0.86 0.86 0.82 1</diffuse></material></visual></link>
+      <link name="wall_east_upper"><pose>22.6 12.35 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 8.5 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 8.5 1.2</size></box></geometry><material><ambient>0.82 0.82 0.78 1</ambient><diffuse>0.86 0.86 0.82 1</diffuse></material></visual></link>
+
+      <!-- Top row: 438 suite, 437, 436, 435, 434, 433, 432 -->
+      <link name="top_room_back_wall"><pose>-3 8.1 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>44 0.10 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>44 0.10 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="top_room_div_438_437"><pose>-17 11.8 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 7.4 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 7.4 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="top_room_div_437_436"><pose>-8 11.8 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 7.4 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 7.4 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="top_room_div_436_435"><pose>0.5 11.8 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 7.4 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 7.4 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="top_room_div_435_434"><pose>11 11.8 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 7.4 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 7.4 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="top_room_div_434_433"><pose>15.5 11.8 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 7.4 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 7.4 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="top_room_div_433_432"><pose>19.2 11.8 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 7.4 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 7.4 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+
+      <!-- Left office stack and stair/elevator core -->
+      <link name="left_stack_inner_wall"><pose>-23 0 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 26 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 26 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="left_stack_div_1"><pose>-24.25 -10.2 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>2.4 0.10 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>2.4 0.10 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="left_stack_div_2"><pose>-24.25 -6.7 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>2.4 0.10 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>2.4 0.10 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="left_stack_div_3"><pose>-24.25 -3.2 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>2.4 0.10 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>2.4 0.10 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="left_stack_div_4"><pose>-24.25 0.3 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>2.4 0.10 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>2.4 0.10 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="left_stack_div_5"><pose>-24.25 3.8 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>2.4 0.10 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>2.4 0.10 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="elevator_core"><pose>-17 -2.0 0.04 0 0 0</pose><collision name="collision"><geometry><box><size>4.2 4.8 0.08</size></box></geometry></collision><visual name="visual"><geometry><box><size>4.2 4.8 0.08</size></box></geometry><material><ambient>0.48 0.50 0.50 1</ambient><diffuse>0.54 0.56 0.56 1</diffuse></material></visual></link>
+      <link name="stair_core_8400"><pose>-17 -8.0 0.04 0 0 0</pose><collision name="collision"><geometry><box><size>4.2 5.0 0.08</size></box></geometry></collision><visual name="visual"><geometry><box><size>4.2 5.0 0.08</size></box></geometry><material><ambient>0.46 0.68 0.72 1</ambient><diffuse>0.52 0.76 0.82 1</diffuse></material></visual></link>
+      <link name="stair_core_8401"><pose>-17 2.7 0.04 0 0 0</pose><collision name="collision"><geometry><box><size>4.2 5.0 0.08</size></box></geometry></collision><visual name="visual"><geometry><box><size>4.2 5.0 0.08</size></box></geometry><material><ambient>0.46 0.68 0.72 1</ambient><diffuse>0.52 0.76 0.82 1</diffuse></material></visual></link>
+
+      <!-- Center and lower rooms: 420-426, 431, 430, 429 suite, and Room 427. -->
+      <link name="center_room_band_north"><pose>0 3.6 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>28 0.10 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>28 0.10 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="center_room_band_south"><pose>0 -6.6 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>28 0.10 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>28 0.10 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="room_421_425_divider"><pose>-2.5 -1.55 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 7.7 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 7.7 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="room_425_431_divider"><pose>7.3 -1.55 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 7.7 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 7.7 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="room_431_426_split"><pose>11.5 -1.55 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 7.7 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 7.7 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="room_430_west_wall"><pose>18.2 -3.2 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 8.4 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 8.4 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="room_430_east_wall"><pose>23.7 -3.2 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 8.4 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 8.4 1.2</size></box></geometry><material><ambient>0.80 0.80 0.76 1</ambient><diffuse>0.84 0.84 0.80 1</diffuse></material></visual></link>
+      <link name="room_427_north_wall"><pose>5.0 -10.08 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>24.2 0.10 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>24.2 0.10 1.2</size></box></geometry><material><ambient>0.82 0.82 0.78 1</ambient><diffuse>0.86 0.86 0.82 1</diffuse></material></visual></link>
+      <link name="room_427_west_wall"><pose>-7.1 -12.35 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 4.54 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 4.54 1.2</size></box></geometry><material><ambient>0.82 0.82 0.78 1</ambient><diffuse>0.86 0.86 0.82 1</diffuse></material></visual></link>
+      <link name="room_427_east_wall"><pose>17.1 -12.35 0.6 0 0 0</pose><collision name="collision"><geometry><box><size>0.10 4.54 1.2</size></box></geometry></collision><visual name="visual"><geometry><box><size>0.10 4.54 1.2</size></box></geometry><material><ambient>0.82 0.82 0.78 1</ambient><diffuse>0.86 0.86 0.82 1</diffuse></material></visual></link>
+
+      <!-- Yellow door plates indicate known openings from the drawing. -->
+    </model>
+  </world>
+</sdf>

@@ -187,6 +187,44 @@ python3 scripts/pan_tilt_gazebo_tracker.py \
 
 If `runtime_command.txt` changes, the active command is updated. If `runtime_vlm.json` changes, the parser will merge the VLM grounding output into the active intent. An audio file path can also be supplied with `--audio-file` if a local Whisper installation is available.
 
+## 4th-Floor Gazebo Worlds
+
+This repo now includes two 4th-floor Gazebo worlds:
+
+- [worlds/fourth_floor.world](worlds/fourth_floor.world)
+  - an approximate full Bell Hall 4th-floor layout traced from the Autodesk Viewer PDF screenshot
+  - includes the visible room/corridor structure, stair/elevator cores, bridges, Room 427, and major rooms from the drawing
+- [scripts/run_gazebo_fourth_floor_world.sh](scripts/run_gazebo_fourth_floor_world.sh)
+  - launches the full-floor approximation from this project root
+- [worlds/room_427.world](worlds/room_427.world)
+  - measured room floor
+  - main walls
+  - eight window openings with glass panes
+  - ceiling light panels
+  - Door 1, Door 2, and Door 3 panels
+  - connected three-box wall section
+  - shiny dark floor material for reflection/glare testing
+- [scripts/run_gazebo_room_427_world.sh](scripts/run_gazebo_room_427_world.sh)
+  - launches the Room 427 world from this project root
+
+Run the full 4th-floor world with:
+
+```bash
+./scripts/run_gazebo_fourth_floor_world.sh
+```
+
+Run the detailed Room 427 world with:
+
+```bash
+./scripts/run_gazebo_room_427_world.sh
+```
+
+If Gazebo has render issues on Apple Silicon, try:
+
+```bash
+GZ_RENDER_BACKEND=metal ./scripts/run_gazebo_fourth_floor_world.sh
+```
+
 ## Temporary Gazebo Test World
 
 While the shared classroom world is still under development, this repo now includes a temporary validation world:
