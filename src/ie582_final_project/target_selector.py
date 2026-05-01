@@ -24,6 +24,7 @@ class TargetSelectorConfig:
     color_mismatch_penalty: float = 0.12
     region_match_bonus: float = 0.12
     region_mismatch_penalty: float = 0.08
+    region_axis_weight: float = 0.35
     track_id_match_bonus: float = 0.60
     track_id_mismatch_penalty: float = 1.00
     sticky_track_bonus: float = 0.18
@@ -100,6 +101,27 @@ def _region_for_detection(detection: Detection, frame_shape: Tuple[int, int]) ->
     return "center"
 
 
+def _region_axis_score(
+    detection: Detection,
+    target_region: str,
+    frame_shape: Tuple[int, int],
+) -> float:
+    """Return a smooth horizontal preference score in [-1, 1]."""
+
+    _, frame_w = frame_shape
+    if frame_w <= 0:
+        return 0.0
+
+    normalized_x = _clamp(detection.bbox.center_x / float(frame_w), 0.0, 1.0)
+    if target_region == "left":
+        return 1.0 - 2.0 * normalized_x
+    if target_region == "right":
+        return 2.0 * normalized_x - 1.0
+    if target_region == "center":
+        return _clamp(1.0 - 4.0 * abs(normalized_x - 0.5), -1.0, 1.0)
+    return 0.0
+
+
 def _command_match_adjustment(
     detection: Detection,
     intent: CommandIntent,
@@ -129,6 +151,15 @@ def _command_match_adjustment(
 
     if intent.target_region:
         observed_region = _region_for_detection(detection, frame_shape)
+        region_axis_bonus = config.region_axis_weight * _region_axis_score(
+            detection,
+            intent.target_region,
+            frame_shape,
+        )
+        if region_axis_bonus:
+            adjustment += region_axis_bonus
+            detail["region_axis"] = region_axis_bonus
+
         if observed_region == intent.target_region:
             adjustment += config.region_match_bonus
             detail["region_match"] = config.region_match_bonus

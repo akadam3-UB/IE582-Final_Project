@@ -98,6 +98,27 @@ class PanTiltPipelineTests(unittest.TestCase):
         self.assertEqual(ranked[0].detection.track_id, 6)
         self.assertEqual(second_best.detection.track_id, 6)
 
+    def test_region_command_switches_to_requested_side(self) -> None:
+        pipeline = PanTiltTargetingPipeline()
+        pipeline.update_command("track the person on the left")
+
+        left_locked = [
+            Detection("person", 0.95, BoundingBox(40, 110, 160, 420), track_id=1),
+            Detection("person", 0.95, BoundingBox(255, 100, 395, 430), track_id=2),
+            Detection("person", 0.95, BoundingBox(500, 120, 590, 360), track_id=3),
+        ]
+        _, best_left, _ = pipeline.step(left_locked, (480, 640), self.joints, robot_id=1)
+        self.assertIsNotNone(best_left)
+        assert best_left is not None
+        self.assertEqual(best_left.detection.track_id, 1)
+
+        pipeline.update_command("track the person on the right")
+        _, best_right, ranked = pipeline.step(left_locked, (480, 640), self.joints, robot_id=1)
+        self.assertIsNotNone(best_right)
+        assert best_right is not None
+        self.assertEqual(ranked[0].detection.track_id, 3)
+        self.assertEqual(best_right.detection.track_id, 3)
+
 
 if __name__ == "__main__":
     unittest.main()

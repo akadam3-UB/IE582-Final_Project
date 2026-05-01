@@ -56,6 +56,15 @@ class TargetSelectorTests(unittest.TestCase):
         assert best is not None
         self.assertEqual(best.detection.track_id, 9)
 
+    def test_region_hint_beats_center_bias_for_edge_target(self) -> None:
+        detections = [
+            Detection("person", 0.95, BoundingBox(250, 100, 390, 430), track_id=2),
+            Detection("person", 0.95, BoundingBox(500, 120, 590, 360), track_id=3),
+        ]
+        intent = CommandIntent(action="track", target_label="person", target_region="right")
+        ranked = rank_targets(detections, intent, frame_shape=(480, 640))
+        self.assertEqual(ranked[0].detection.track_id, 3)
+
     def test_sticky_track_bonus_reduces_target_switching(self) -> None:
         detections = [
             Detection("person", 0.91, BoundingBox(200, 100, 350, 420), track_id=5),

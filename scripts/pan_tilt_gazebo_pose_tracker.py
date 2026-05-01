@@ -47,6 +47,22 @@ def _clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
 
+def _horizontal_region(center_x: float, frame_width: float) -> str:
+    if center_x < frame_width / 3.0:
+        return "left"
+    if center_x > 2.0 * frame_width / 3.0:
+        return "right"
+    return "center"
+
+
+def _entity_region_hint(name: str) -> Optional[str]:
+    lowered = name.lower()
+    for region in ("left", "center", "right"):
+        if region in lowered:
+            return region
+    return None
+
+
 class GazeboPosePanTiltTracker:
     def __init__(
         self,
@@ -94,6 +110,8 @@ class GazeboPosePanTiltTracker:
         self._track_id_by_name: Dict[str, int] = {}
         self._next_track_id = 1
         self._last_scene_summary = ""
+        self._last_tracking_status = ""
+        self._last_target_report = ""
 
         self.command_inputs = RuntimeCommandInputs(
             initial_command=command_text,
@@ -175,6 +193,8 @@ class GazeboPosePanTiltTracker:
             return
 
         intent = self.pipeline.update_command(command_text, vlm_text=vlm_text)
+        self._last_tracking_status = ""
+        self._last_target_report = ""
         print(f"[command] {intent.raw_text or command_text} -> {intent}")
 
     def _publish_joint_command(self, joint_name: str, angle_deg: float) -> None:
@@ -309,10 +329,25 @@ class GazeboPosePanTiltTracker:
             scene_summary = build_scene_summary(detections, frame_width=self.res_cols)
             if best is not None:
                 entity_name = best.detection.attributes.get("entity_name", "")
-                print(
+                image_region = _horizontal_region(best.detection.bbox.center_x, frame_width=self.res_cols)
+                world_region = _entity_region_hint(entity_name) or "unknown"
+                requested_region = self.pipeline.intent.target_region or "any"
+                tracking_state = "centered" if not cmd.joint_targets else "moving_to_center"
+                tracking_status = (
+                    f"[tracking] request={requested_region} selected_world={world_region} "
+                    f"image_region={image_region} state={tracking_state}"
+                )
+                if tracking_status != self._last_tracking_status:
+                    print(tracking_status)
+                    self._last_tracking_status = tracking_status
+
+                target_report = (
                     f"target id={best.detection.track_id} label={best.detection.label} "
                     f"entity={entity_name} score={best.total:.3f} cmd={cmd.joint_targets}"
                 )
+                if target_report != self._last_target_report:
+                    print(target_report)
+                    self._last_target_report = target_report
             if scene_summary != self._last_scene_summary:
                 print(f"[scene] {scene_summary}")
                 self._last_scene_summary = scene_summary
