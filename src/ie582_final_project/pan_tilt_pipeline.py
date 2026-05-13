@@ -27,8 +27,8 @@ class PanTiltPipelineConfig:
 class PanTiltTargetingPipeline:
     """Stateful pan/tilt targeting pipeline.
 
-    Uses the same command parser and target selector as the generic pipeline, then
-    emits pan/tilt joint commands compatible with the course host socket API.
+    Uses the command parser and target selector, then emits pan/tilt joint
+    commands for the Gazebo Room 427 demo.
     """
 
     def __init__(

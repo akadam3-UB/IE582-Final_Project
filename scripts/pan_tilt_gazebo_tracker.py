@@ -47,7 +47,7 @@ from ie582_final_project.runtime_inputs import RuntimeCommandInputs
 from ie582_final_project.vision import build_scene_summary, ultralytics_results_to_detections
 
 
-DEFAULT_TOPIC = "/world/default/model/pantilt/link/tilt_link/sensor/camera/image"
+DEFAULT_TOPIC = "/world/room_427_tracking_test/model/pantilt/link/tilt_link/sensor/camera/image"
 
 _PIXEL_FORMAT_CHANNELS = {
     image_pb2.L_INT8: 1,

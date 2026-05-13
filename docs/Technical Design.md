@@ -1,199 +1,92 @@
 # Technical Design
 
-## 1. Problem Framing
+## Project Boundary
 
-The project goal is not simply to make a pan/tilt camera move. The real problem is:
+This project is a Room 427 pan/tilt camera demo. It is not a mobile robot, path planner, or full building simulation.
 
-1. observe a scene with multiple possible targets
-2. interpret a human command about which target matters
-3. choose the intended target robustly
-4. keep that target centered without unstable camera motion
+The system does four things:
 
-That framing matters because it drives the architecture. A plain tracker solves only step 4. This project adds the decision layer between language and motion.
+1. parse a command such as `track the red person`
+2. rank visible targets against that command
+3. keep the selected target stable across frames
+4. publish pan/tilt joint commands that move the camera toward the target center
 
-## 2. Why Pan/Tilt Instead of a Car
+## Data Flow
 
-The earlier project direction could have expanded into a mobile robot or car. That path was intentionally narrowed to a pan/tilt camera for three reasons:
+```text
+command text
+  -> command_parser.py
+  -> CommandIntent
 
-1. The core research question here is **language-guided target selection**, not navigation.
-2. A car adds localization, obstacle avoidance, path planning, and safety concerns that would dominate the semester.
-3. The class already has a pan/tilt platform and prior ArUco-tracking experience, so this project can build on known hardware and known control interfaces.
+optional speech/audio or VLM JSON
+  -> runtime_inputs.py
+  -> command_parser.py
 
-This makes the project more coherent. The system is now a **smart classroom camera** rather than a partially finished mobile robot.
+detections or Gazebo poses
+  -> target_selector.py
+  -> ranked TargetScore list
 
-## 3. System Architecture
+best target + current joint state
+  -> pan_tilt_controller.py
+  -> PanTiltCommand
+```
 
-The design is split into a fast loop and a slow loop.
+`pan_tilt_pipeline.py` ties these pieces together and remembers the active target so the camera does not jump between similar people.
 
-### 3.1 Fast Loop
+## Main Runtime Paths
 
-Runs every frame or near frame rate:
+### Stable Gazebo Demo
 
-1. camera frame acquisition
-2. object detection + tracking with persistent IDs
-3. lightweight visual attributes from the tracked crop
-4. target scoring and selection
-5. pan/tilt command generation
+Use this first:
 
-This loop must stay lightweight because it directly determines tracking stability.
+```bash
+./scripts/run_gazebo_room_427_tracking_world_gui.sh
+./scripts/run_gazebo_room_427_pose_tracker.sh
+```
 
-### 3.2 Slow Loop
+This path reads Gazebo model poses for the colored local people. It is repeatable and avoids rendering issues during project development.
 
-Runs only when needed:
+### Advanced Paths
 
-1. speech transcription
-2. command parsing into a structured intent
-3. optional VLM grounding for ambiguous descriptions
+Keep these behind the stable demo:
 
-This loop can be slower because it updates intent, not motor commands on every frame.
+- `mic_command_listener.py` can write spoken commands into `runtime_command.txt`.
+- `pan_tilt_gazebo_tracker.py` uses the Gazebo camera image topic and Ultralytics detections.
+- `pan_tilt_socket_client.py` adapts the same parser, selector, and controller to the class host socket protocol.
+- `vision.py` converts detector outputs into the common `Detection` model and estimates simple color attributes from image crops.
 
-### 3.3 Design Principle
+These paths preserve the original speech/vision project complexity, but they should not block the Room 427 pose demo.
 
-The key architectural principle is:
+## Important Design Choices
 
-**Use heavy models for interpretation, but keep actuation decisions on lightweight, bounded logic.**
+### Heuristic Target Selection
 
-That is why `Qwen-VL` or another VLM is treated as an optional helper rather than the main real-time controller.
+The selector uses weighted signals instead of a learned policy:
 
-## 4. Core Data Flow
+- target label match
+- color match
+- left/center/right region match
+- confidence
+- image-center distance
+- target size
+- sticky target bonus
 
-The implemented pipeline currently follows this shape:
+This keeps behavior explainable for a semester project and makes debugging easier.
 
-1. `Whisper` or `mlx-whisper` converts speech to text
-2. `command_parser.py` converts text into a `CommandIntent`
-3. `Ultralytics` tracking produces labeled detections with track IDs
-4. `vision.py` converts detections into project models and estimates simple attributes such as dominant color
-5. `target_selector.py` ranks candidates
-6. `pan_tilt_pipeline.py` applies stability rules and chooses the target to follow
-7. `pan_tilt_controller.py` converts image error into joint commands
-8. transport scripts publish commands to Gazebo or the class socket host
+### Sticky Targeting
 
-## 5. Target Selection Reasoning
+Once a target is selected, the pipeline gives it a small bonus. A new target must be clearly better before the camera switches. This prevents jitter when multiple people satisfy the same command.
 
-The target selector combines several signals:
+### Rate-Limited Pan/Tilt Control
 
-1. center proximity
-2. apparent size
-3. detector confidence
-4. class priority
-5. command matches such as label, color, region, or explicit track ID
+The controller uses a deadband and per-step limit. The deadband prevents chatter near the image center; the step limit prevents unrealistic jumps.
 
-This is intentionally a weighted heuristic instead of a learned policy. The reasons are:
+## Extension Points
 
-1. the class environment does not provide enough data to train a stable learned policy
-2. debugging matters more than squeezing out a few points of performance
-3. the selector needs to be interpretable for demos and reporting
-
-Each selected target can be explained by its score breakdown, which is useful for analysis and failure diagnosis.
-
-## 6. Stability and Control Reasoning
-
-Two stability problems matter in a multi-target pan/tilt system:
-
-1. **selection instability**: bouncing between similar objects
-2. **control instability**: large, jerky camera corrections
-
-### 6.1 Selection Stability
-
-The current implementation now uses two stabilizers:
-
-1. **sticky target preference**
-   - if the current track is still a strong candidate, prefer it
-2. **switch margin hysteresis**
-   - do not switch to a new target unless it is clearly better than the current one
-
-This matters because in a classroom scene, multiple people may all satisfy a command like `"track the person"`. Without hysteresis, the camera can alternate between them frame to frame.
-
-### 6.2 Control Stability
-
-The controller uses:
-
-1. deadbands in pixels
-2. image-space error mapped to angular corrections
-3. joint limit clamping
-4. max per-step angular rate limiting
-
-The deadband avoids chatter near the image center. The per-step cap avoids unrealistic or unstable jumps when the target is far from center.
-
-## 7. Fast Attributes vs Slow Grounding
-
-The repo currently supports simple attribute grounding directly from the image crop:
-
-1. dominant color
-2. left/center/right region
-
-These are cheap and useful for commands like:
-
-1. `track the red cone`
-2. `track the professor on the left`
-
-However, these lightweight attributes are not enough for richer requests like:
-
-1. `track the student in the red shirt near the board`
-2. `track the person next to the door`
-
-Those commands require either:
-
-1. better scene semantics
-2. relational reasoning
-3. a slower VLM grounding pass
-
-That is why the project still needs a slow-grounding stage even though the fast loop already has some attribute reasoning.
-
-## 8. Current Implementation Maturity
-
-The repo now has meaningful structure in four areas:
-
-1. command understanding
-2. target ranking
-3. control output
-4. execution scripts for Gazebo, host sockets, and macOS speech input
-
-It is no longer just a proposal repo. But it is also not yet an end-to-end validated robot system. The current maturity level is best described as:
-
-**implemented architecture + tested core logic + pending live integration**
-
-That is an important distinction, and it keeps the repo honest.
-
-## 9. Known Limitations
-
-The most important limitations are:
-
-1. no full live microphone-to-tracker demonstration has been validated yet
-2. no classroom-world Gazebo experiment results are stored yet
-3. no physical pan/tilt robot experiment results are stored yet
-4. color estimation is intentionally simple and may fail under poor lighting
-5. VLM grounding is architected but not fully integrated into the main runtime path
-
-## 10. Engineering Priorities From Here
-
-The next steps should be driven by risk reduction, not by adding more code at random.
-
-### Priority 1: End-to-End Intent Updates
-
-Prove that a spoken command can change the active tracking target during runtime.
-
-### Priority 2: Live Tracker Integration
-
-Run the pipeline continuously on the Gazebo classroom camera topic or physical camera stream.
-
-### Priority 3: Store Results
-
-Collect concrete runs showing:
-
-1. command issued
-2. chosen target
-3. whether the choice was correct
-4. whether the camera remained locked
-
-### Priority 4: Harder Grounding
-
-Only after the basic path is stable should the project spend time on slower VLM reasoning.
-
-## 11. Final Design Thesis
-
-The project should be understood as:
-
-**an intent-driven smart camera that bridges human language and real-time visual servoing in a multi-target scene**
-
-That is a stronger and more defensible thesis than simply calling it object tracking.
+- Add command vocabulary in `command_parser.py`.
+- Add ranking behavior or tune weights in `target_selector.py`.
+- Tune pan/tilt response in `pan_tilt_controller.py`.
+- Improve camera detections or color attributes in `vision.py`.
+- Add speech or VLM input handling in `runtime_inputs.py`.
+- Add new Gazebo people or props in `Simulation/generate_room_427_furnishings.py`.
+- Add tests before changing selection or control behavior.

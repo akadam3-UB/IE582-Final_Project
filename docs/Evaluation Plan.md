@@ -177,9 +177,9 @@ Advantages:
 
 A good final demo does not need to solve every grounding problem. A strong MVP would show:
 
-1. spoken command captured locally
+1. Room 427 tracking world running
 2. command parsed into structured intent
-3. multiple targets visible
+3. multiple colored people visible
 4. correct target selected
 5. pan/tilt camera keeps the target centered
 
@@ -187,8 +187,18 @@ Suggested demo commands:
 
 1. `track the person`
 2. `track the person on the left`
-3. `track the red cone`
+3. `track the red person`
 4. `stop`
+
+Stable Gazebo command sequence:
+
+```bash
+./scripts/run_gazebo_room_427_tracking_world_gui.sh
+echo "track the red person" > runtime_command.txt
+./scripts/run_gazebo_room_427_pose_tracker.sh
+```
+
+The speech bridge and camera/YOLO tracker are useful stretch paths, but the pose tracker should be the baseline evidence because it is deterministic.
 
 ## 7. Stretch Goal Demo
 

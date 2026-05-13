@@ -32,8 +32,8 @@ class TargetSelectorConfig:
         default_factory=lambda: {
             "person": 1.00,
             "cone": 0.90,
-            "car": 0.85,
             "bottle": 0.60,
+            "table": 0.55,
             "chair": 0.55,
             "backpack": 0.55,
             "ball": 0.55,

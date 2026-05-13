@@ -5,11 +5,29 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ie582-final-project"
 version = "0.1.0"
-description = "Command-grounded multi-target prioritization and control scaffold for IE582"
+description = "Room 427 command-guided pan/tilt tracking demo for IE582"
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [
   { name = "Abhijeet Kadam" }
+]
+dependencies = [
+  "numpy>=1.23"
+]
+
+[project.optional-dependencies]
+vision = [
+  "opencv-python>=4.8",
+  "ultralytics>=8.0"
+]
+speech = [
+  "openai-whisper>=20231117"
+]
+mac-speech = [
+  "mlx-whisper>=0.4"
+]
+host = [
+  "python-socketio>=5.0"
 ]
 
 [tool.setuptools]

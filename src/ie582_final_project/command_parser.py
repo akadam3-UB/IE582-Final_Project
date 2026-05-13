@@ -1,4 +1,4 @@
-"""Command parsing utilities for voice/text robot instructions."""
+"""Command parsing utilities for Room 427 pan/tilt tracking instructions."""
 
 from __future__ import annotations
 
@@ -37,8 +37,8 @@ REGION_WORDS = {
 LABEL_SYNONYMS = {
     "person": {"person", "human", "man", "woman", "student", "teacher", "professor", "instructor"},
     "cone": {"cone", "traffic cone"},
-    "car": {"car", "vehicle", "robot car"},
     "bottle": {"bottle", "water bottle"},
+    "table": {"table", "desk", "bench", "workbench"},
     "chair": {"chair", "seat"},
     "backpack": {"backpack", "bag"},
     "ball": {"ball"},
@@ -55,7 +55,7 @@ def build_vlm_prompt(scene_description: str, user_command: str) -> str:
         "You are grounding a robot command into structured JSON.\\n"
         "Return ONLY JSON with keys: "
         "action, target_label, target_color, target_region, target_track_id, speed_scale, priority_hint.\\n"
-        "Allowed action values: track, go_to, stop.\\n"
+        "Allowed action values: track, stop.\\n"
         "speed_scale must be a float in [0.3, 1.5].\\n"
         "Set unknown fields to null.\\n\\n"
         f"Scene: {scene_description}\\n"
@@ -115,7 +115,7 @@ def _extract_region(text: str) -> Optional[str]:
 
 def _intent_from_mapping(data: Dict[str, object], raw_text: str) -> CommandIntent:
     action_raw = str(data.get("action", "track")).strip().lower()
-    action = action_raw if action_raw in {"track", "go_to", "stop"} else "track"
+    action = action_raw if action_raw in {"track", "stop"} else "track"
 
     label_value = data.get("target_label")
     target_label = _canonical_label(str(label_value)) if label_value else None
@@ -189,8 +189,8 @@ def parse_rule_based(command_text: str) -> CommandIntent:
     action = "track"
     if any(token in normalized for token in ("stop", "halt", "cancel", "freeze")):
         action = "stop"
-    elif any(token in normalized for token in ("go to", "goto", "approach", "move to", "drive to")):
-        action = "go_to"
+    elif any(token in normalized for token in ("look at", "focus on", "follow")):
+        action = "track"
 
     track_match = re.search(r"(?:track|id)\s*#?\s*(\d+)", normalized)
     target_track_id = int(track_match.group(1)) if track_match else None

@@ -80,12 +80,6 @@
       </camera>
     </gui>
 
-    <!-- Generated fourth-floor wall model -->
-    <include>
-      <uri>model://fourth_floor_walls</uri>
-      <pose>0 0 0 0 0 0</pose>
-    </include>
-
     <!-- Floor: black, reflective -->
     <model name="room_427_floor">
       <static>true</static>
@@ -1592,6 +1586,37 @@
         </visual>
       </link>
     </model>
+
+    <!-- Detailed Room 427 scene layer: furniture, yellow tape, lab props, blinds, and local people. -->
+    <include>
+      <name>room_427_furnishings</name>
+      <uri>model://room_427_furnishings</uri>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <name>person_red_left</name>
+      <uri>model://person_proxy_red</uri>
+      <pose>8.6 5.05 0 0 0 -0.35</pose>
+    </include>
+
+    <include>
+      <name>person_green_center</name>
+      <uri>model://person_proxy_green</uri>
+      <pose>10.25 3.25 0 0 0 0.05</pose>
+    </include>
+
+    <include>
+      <name>person_blue_right</name>
+      <uri>model://person_proxy_blue</uri>
+      <pose>8.45 1.55 0 0 0 0.2</pose>
+    </include>
+
+    <include>
+      <name>person_yellow_back</name>
+      <uri>model://person_proxy_yellow</uri>
+      <pose>15.65 4.88 0 0 0 -0.25</pose>
+    </include>
 
   </world>
 </sdf>

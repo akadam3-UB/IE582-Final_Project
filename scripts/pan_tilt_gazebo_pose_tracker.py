@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Simulation-first pan/tilt tracker using Gazebo ground-truth poses.
 
-This is a stable fallback for the temporary test world on macOS, where the
-Gazebo + Python 3.14 environment can run the simulator but Ultralytics / Torch
-prediction is currently unstable. It still exercises command parsing, target
-selection, target lock, and pan/tilt control end to end.
+This is the stable Room 427 demo path. It exercises command parsing, target
+selection, target lock, and pan/tilt control without depending on camera
+rendering quality.
 """
 
 from __future__ import annotations
@@ -37,7 +36,6 @@ from ie582_final_project.models import BoundingBox, Detection
 from ie582_final_project.pan_tilt_controller import PanTiltControllerConfig
 from ie582_final_project.pan_tilt_pipeline import PanTiltTargetingPipeline
 from ie582_final_project.runtime_inputs import RuntimeCommandInputs
-from ie582_final_project.vision import build_scene_summary
 
 
 DEFAULT_POSE_TOPIC = "/world/default/pose/info"
@@ -61,6 +59,27 @@ def _entity_region_hint(name: str) -> Optional[str]:
         if region in lowered:
             return region
     return None
+
+
+def _entity_color_hint(name: str) -> Optional[str]:
+    lowered = name.lower()
+    for color in ("red", "green", "blue", "yellow", "orange", "purple", "white", "black", "gray"):
+        if color in lowered:
+            return color
+    return None
+
+
+def _build_scene_summary(detections: Iterable[Detection], frame_width: float) -> str:
+    parts = []
+    for detection in detections:
+        region = _horizontal_region(detection.bbox.center_x, frame_width)
+        color = detection.attributes.get("color", "unknown")
+        entity_name = detection.attributes.get("entity_name", "")
+        parts.append(
+            f"{detection.label} id={detection.track_id} entity={entity_name} "
+            f"color={color} at {region}"
+        )
+    return "; ".join(parts) if parts else "No tracked objects are currently visible."
 
 
 class GazeboPosePanTiltTracker:
@@ -171,6 +190,8 @@ class GazeboPosePanTiltTracker:
         positions: Dict[str, Tuple[float, float, float]] = {}
         for pose in msg.pose:
             name = pose.name
+            if "::" in name:
+                continue
             if not any(name.startswith(prefix) for prefix in self.tracked_prefixes):
                 continue
             positions[name] = (
@@ -290,13 +311,18 @@ class GazeboPosePanTiltTracker:
             x2 = _clamp(center_x + bbox_w / 2.0, x1 + 1.0, self.res_cols)
             y2 = _clamp(center_y + bbox_h / 2.0, y1 + 1.0, self.res_rows)
 
+            attributes = {"source": "gazebo_pose", "entity_name": name}
+            color_hint = _entity_color_hint(name)
+            if color_hint:
+                attributes["color"] = color_hint
+
             detections.append(
                 Detection(
                     label="person",
                     confidence=0.95,
                     track_id=self._track_id_for_name(name),
                     bbox=BoundingBox(x1=x1, y1=y1, x2=x2, y2=y2),
-                    attributes={"source": "gazebo_pose", "entity_name": name},
+                    attributes=attributes,
                 )
             )
 
@@ -326,7 +352,7 @@ class GazeboPosePanTiltTracker:
             for joint_name, angle_deg in cmd.joint_targets.items():
                 self._publish_joint_command(joint_name, angle_deg)
 
-            scene_summary = build_scene_summary(detections, frame_width=self.res_cols)
+            scene_summary = _build_scene_summary(detections, frame_width=self.res_cols)
             if best is not None:
                 entity_name = best.detection.attributes.get("entity_name", "")
                 image_region = _horizontal_region(best.detection.bbox.center_x, frame_width=self.res_cols)
@@ -343,7 +369,8 @@ class GazeboPosePanTiltTracker:
 
                 target_report = (
                     f"target id={best.detection.track_id} label={best.detection.label} "
-                    f"entity={entity_name} score={best.total:.3f} cmd={cmd.joint_targets}"
+                    f"entity={entity_name} color={best.detection.attributes.get('color', 'unknown')} "
+                    f"score={best.total:.3f} cmd={cmd.joint_targets}"
                 )
                 if target_report != self._last_target_report:
                     print(target_report)

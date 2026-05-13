@@ -1,19 +1,16 @@
-"""Starter package for IE582 multi-target prioritization and control."""
+"""Room 427 command-guided pan/tilt tracking package."""
 
-from .command_parser import parse_command
-from .drive_controller import DriveController, DriveControllerConfig
+from .command_parser import build_vlm_prompt, parse_command, parse_vlm_json
 from .models import (
     BoundingBox,
     CommandIntent,
     Detection,
-    DriveCommand,
     JointState,
     PanTiltCommand,
     TargetScore,
 )
 from .pan_tilt_controller import PanTiltController, PanTiltControllerConfig
 from .pan_tilt_pipeline import PanTiltPipelineConfig, PanTiltTargetingPipeline
-from .pipeline import MultiTargetPipeline
 from .runtime_inputs import (
     FFmpegMicrophoneRecorder,
     RuntimeCommandInputs,
@@ -32,12 +29,9 @@ __all__ = [
     "BoundingBox",
     "CommandIntent",
     "Detection",
-    "DriveCommand",
     "JointState",
     "PanTiltCommand",
     "TargetScore",
-    "DriveController",
-    "DriveControllerConfig",
     "PanTiltController",
     "PanTiltControllerConfig",
     "PanTiltPipelineConfig",
@@ -45,12 +39,13 @@ __all__ = [
     "FFmpegMicrophoneRecorder",
     "RuntimeCommandInputs",
     "TargetSelectorConfig",
-    "MultiTargetPipeline",
     "WhisperAudioTranscriber",
     "build_scene_summary",
+    "build_vlm_prompt",
     "estimate_detection_attributes",
     "list_macos_audio_devices",
     "parse_command",
+    "parse_vlm_json",
     "rank_targets",
     "select_target",
     "top_labels",

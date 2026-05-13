@@ -83,12 +83,6 @@
       </camera>
     </gui>
 
-    <!-- Generated fourth-floor wall model -->
-    <include>
-      <uri>model://fourth_floor_walls</uri>
-      <pose>0 0 0 0 0 0</pose>
-    </include>
-
     <!-- Floor: black, reflective -->
     <model name="room_427_floor">
       <static>true</static>
@@ -1596,6 +1590,37 @@
       </link>
     </model>
 
+    <!-- Detailed Room 427 scene layer: furniture, yellow tape, lab props, blinds, and local people. -->
+    <include>
+      <name>room_427_furnishings</name>
+      <uri>model://room_427_furnishings</uri>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <name>person_red_left</name>
+      <uri>model://person_proxy_red</uri>
+      <pose>8.6 5.05 0 0 0 -0.35</pose>
+    </include>
+
+    <include>
+      <name>person_green_center</name>
+      <uri>model://person_proxy_green</uri>
+      <pose>10.25 3.25 0 0 0 0.05</pose>
+    </include>
+
+    <include>
+      <name>person_blue_right</name>
+      <uri>model://person_proxy_blue</uri>
+      <pose>8.45 1.55 0 0 0 0.2</pose>
+    </include>
+
+    <include>
+      <name>person_yellow_back</name>
+      <uri>model://person_proxy_yellow</uri>
+      <pose>15.65 4.88 0 0 0 -0.25</pose>
+    </include>
+
 
     <model name="pantilt">
       <pose>1.2 3.27 1.45 0 0 0</pose>
@@ -1746,110 +1771,6 @@
         <p_gain>0.8</p_gain>
       </plugin>
     </model>
-
-    <model name="target_left_proxy">
-      <static>true</static>
-      <pose>8.6 5.1 0.85 0 0 0</pose>
-      <link name="link">
-        <visual name="visual">
-          <geometry><box><size>0.45 0.45 1.7</size></box></geometry>
-          <material>
-            <ambient>0.82 0.18 0.18 1</ambient>
-            <diffuse>0.82 0.18 0.18 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="target_center_proxy">
-      <static>true</static>
-      <pose>9.4 3.27 0.85 0 0 0</pose>
-      <link name="link">
-        <visual name="visual">
-          <geometry><box><size>0.45 0.45 1.7</size></box></geometry>
-          <material>
-            <ambient>0.2 0.72 0.2 1</ambient>
-            <diffuse>0.2 0.72 0.2 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="target_right_proxy">
-      <static>true</static>
-      <pose>8.5 1.7 0.85 0 0 0</pose>
-      <link name="link">
-        <visual name="visual">
-          <geometry><box><size>0.45 0.45 1.7</size></box></geometry>
-          <material>
-            <ambient>0.18 0.28 0.82 1</ambient>
-            <diffuse>0.18 0.28 0.82 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-
-    <actor name="person_left">
-      <skin>
-        <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/talk_b.dae</filename>
-        <scale>1.0</scale>
-      </skin>
-      <animation name="talk_b">
-        <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/talk_b.dae</filename>
-        <scale>0.055</scale>
-        <interpolate_x>true</interpolate_x>
-      </animation>
-      <script>
-        <loop>true</loop>
-        <auto_start>true</auto_start>
-        <trajectory id="0" type="talk_b">
-          <waypoint><time>0</time><pose>8.6 5.1 1.02 0 0 -0.1</pose></waypoint>
-          <waypoint><time>20</time><pose>8.6 5.1 1.02 0 0 -0.1</pose></waypoint>
-        </trajectory>
-      </script>
-    </actor>
-
-    <actor name="person_center">
-      <skin>
-        <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/talk_b.dae</filename>
-        <scale>1.0</scale>
-      </skin>
-      <animation name="talk_b">
-        <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/talk_b.dae</filename>
-        <scale>0.055</scale>
-        <interpolate_x>true</interpolate_x>
-      </animation>
-      <script>
-        <loop>true</loop>
-        <auto_start>true</auto_start>
-        <trajectory id="0" type="talk_b">
-          <waypoint><time>0</time><pose>9.4 3.27 1.02 0 0 0</pose></waypoint>
-          <waypoint><time>20</time><pose>9.4 3.27 1.02 0 0 0</pose></waypoint>
-        </trajectory>
-      </script>
-    </actor>
-
-    <actor name="person_right">
-      <skin>
-        <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/walk.dae</filename>
-        <scale>1.0</scale>
-      </skin>
-      <animation name="walk">
-        <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/walk.dae</filename>
-        <interpolate_x>true</interpolate_x>
-      </animation>
-      <script>
-        <loop>true</loop>
-        <auto_start>true</auto_start>
-        <trajectory id="0" type="walk" tension="0.3">
-          <waypoint><time>0</time><pose>8.2 1.5 1.02 0 0 0.1</pose></waypoint>
-          <waypoint><time>4</time><pose>8.7 1.9 1.02 0 0 0.2</pose></waypoint>
-          <waypoint><time>8</time><pose>7.9 1.4 1.02 0 0 -0.15</pose></waypoint>
-          <waypoint><time>12</time><pose>8.5 1.7 1.02 0 0 0.2</pose></waypoint>
-        </trajectory>
-      </script>
-    </actor>
 
   </world>
 </sdf>

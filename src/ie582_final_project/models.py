@@ -51,7 +51,7 @@ class Detection:
 class CommandIntent:
     """Parsed command for target selection and motion mode."""
 
-    action: str = "track"  # track | go_to | stop
+    action: str = "track"  # track | stop
     target_label: Optional[str] = None
     target_color: Optional[str] = None
     target_region: Optional[str] = None
@@ -69,17 +69,6 @@ class TargetScore:
     total: float
     breakdown: Dict[str, float]
     reason: str
-
-
-@dataclass(frozen=True)
-class DriveCommand:
-    """Low-level drive output in UB Racer control scale."""
-
-    steering: float
-    throttle: float
-    mode: str
-    target_track_id: Optional[int] = None
-    debug: Dict[str, float] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -107,7 +96,7 @@ class JointState:
 
 @dataclass(frozen=True)
 class PanTiltCommand:
-    """Pan/tilt target command in host socket format."""
+    """Pan/tilt target command."""
 
     joint_targets: Dict[str, float]
     robot_id: Optional[int] = None
@@ -119,7 +108,7 @@ class PanTiltCommand:
         return bool(self.joint_targets)
 
     def to_host_payload(self) -> Optional[list]:
-        """Format for `sio_host.emit('command', [robotID, [cmd]])`."""
+        """Return the legacy two-item payload shape when a robot ID is provided."""
 
         if self.robot_id is None or not self.joint_targets:
             return None

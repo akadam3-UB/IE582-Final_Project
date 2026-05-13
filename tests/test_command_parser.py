@@ -24,27 +24,31 @@ class CommandParserTests(unittest.TestCase):
         self.assertEqual(intent.target_label, "person")
         self.assertEqual(intent.target_region, "left")
 
-    def test_rule_parser_extracts_go_to_and_track_id(self) -> None:
-        intent = parse_rule_based("go to track 17 slowly")
-        self.assertEqual(intent.action, "go_to")
+    def test_rule_parser_extracts_track_id_and_speed(self) -> None:
+        intent = parse_rule_based("track id 17 slowly")
+        self.assertEqual(intent.action, "track")
         self.assertEqual(intent.target_track_id, 17)
         self.assertLess(intent.speed_scale, 1.0)
 
+    def test_rule_parser_extracts_table_synonym(self) -> None:
+        intent = parse_rule_based("track the desk")
+        self.assertEqual(intent.target_label, "table")
+
     def test_vlm_json_with_wrapper_text(self) -> None:
-        text = 'Sure, here it is: {"action":"go_to","target_label":"person","speed_scale":0.8}'
-        intent = parse_vlm_json(text, raw_text="go to the person")
+        text = 'Sure, here it is: {"action":"track","target_label":"person","speed_scale":0.8}'
+        intent = parse_vlm_json(text, raw_text="track the person")
         self.assertIsNotNone(intent)
         assert intent is not None
-        self.assertEqual(intent.action, "go_to")
+        self.assertEqual(intent.action, "track")
         self.assertEqual(intent.target_label, "person")
         self.assertAlmostEqual(intent.speed_scale, 0.8)
 
     def test_parse_command_merges_vlm_fields(self) -> None:
         intent = parse_command(
             "track the cone",
-            vlm_text='{"action":"go_to","target_label":"cone","target_region":"right","speed_scale":1.1}',
+            vlm_text='{"action":"track","target_label":"cone","target_region":"right","speed_scale":1.1}',
         )
-        self.assertEqual(intent.action, "go_to")
+        self.assertEqual(intent.action, "track")
         self.assertEqual(intent.target_label, "cone")
         self.assertEqual(intent.target_region, "right")
         self.assertAlmostEqual(intent.speed_scale, 1.1)
