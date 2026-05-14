@@ -18,6 +18,7 @@ class PanTiltControllerConfig:
     tilt_deadband_px: float = 5.0
     pan_fov_deg: float = 41.4
     tilt_fov_deg: float = 31.6
+    tilt_setpoint_y_fraction: float = 0.5
     gain_scale: float = 1.0
     min_step_deg: float = 0.05
     max_step_deg: float = 4.0
@@ -103,12 +104,14 @@ class PanTiltController:
         speed_scale = _clamp(float(speed_scale), 0.3, 1.5)
 
         error_x = frame_w / 2.0 - target.bbox.center_x
-        error_y = target.bbox.center_y - frame_h / 2.0
+        tilt_setpoint_y = frame_h * _clamp(self.config.tilt_setpoint_y_fraction, 0.05, 0.95)
+        error_y = target.bbox.center_y - tilt_setpoint_y
 
         cmd = {}
         debug = {
             "error_x_px": float(error_x),
             "error_y_px": float(error_y),
+            "tilt_setpoint_y_px": float(tilt_setpoint_y),
         }
 
         if pan_joint is not None and abs(error_x) > self.config.pan_deadband_px:

@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="390" viewBox="0 0 1000 390" role="img" aria-labelledby="title desc">
+  <title id="title">Room 427 demo layout</title>
+  <desc id="desc">Top-down schematic of the Room 427 world showing the window wall, projector wall, podium, desks, rolling chairs, people, doors, and pan tilt camera.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#25364d"/>
+    </marker>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="1000" height="390" fill="#f6f7f2"/>
+  <text x="40" y="34" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#1e2a34">Room 427 Simulation Layout</text>
+  <text x="40" y="54" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#607080">Top-down view; coordinates use Gazebo meters. The front teaching zone is on the right side of the room.</text>
+
+  <!-- Room outline: origin at top-left of this drawing, x increases right, y increases down. -->
+  <rect x="40" y="70" width="907.5" height="245.25" rx="3" fill="#181a1c" stroke="#30343a" stroke-width="3"/>
+  <rect x="43" y="73" width="901.5" height="239.25" rx="2" fill="#2b2d2f"/>
+
+  <!-- Window wall and glass panes along y=0. -->
+  <rect x="58" y="64" width="80" height="12" rx="2" fill="#88b8d6" opacity="0.8"/>
+  <rect x="172" y="64" width="80" height="12" rx="2" fill="#88b8d6" opacity="0.8"/>
+  <rect x="286" y="64" width="80" height="12" rx="2" fill="#88b8d6" opacity="0.8"/>
+  <rect x="400" y="64" width="80" height="12" rx="2" fill="#88b8d6" opacity="0.8"/>
+  <rect x="514" y="64" width="80" height="12" rx="2" fill="#88b8d6" opacity="0.8"/>
+  <rect x="628" y="64" width="80" height="12" rx="2" fill="#88b8d6" opacity="0.8"/>
+  <rect x="742" y="64" width="80" height="12" rx="2" fill="#88b8d6" opacity="0.8"/>
+  <rect x="856" y="64" width="72" height="12" rx="2" fill="#88b8d6" opacity="0.8"/>
+  <text x="404" y="61" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#376179">Window wall</text>
+
+  <!-- Back/door wall. -->
+  <text x="427" y="334" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#56616b">Back wall with doors</text>
+  <rect x="614" y="305" width="46" height="16" fill="#090909" stroke="#999" stroke-width="1"/>
+  <rect x="846" y="305" width="46" height="16" fill="#090909" stroke="#999" stroke-width="1"/>
+  <text x="600" y="349" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56616b">door</text>
+  <text x="835" y="349" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#56616b">door</text>
+
+  <!-- Side door on non-window side. -->
+  <rect x="33" y="237" width="16" height="42" fill="#090909" stroke="#999" stroke-width="1"/>
+  <text x="52" y="266" font-family="Arial, Helvetica, sans-serif" font-size="10" fill="#d8dde3">side door</text>
+
+  <!-- Teaching wall, screen, podium. -->
+  <rect x="936" y="145" width="18" height="94" rx="2" fill="#e9ecef" stroke="#40464d" stroke-width="1.5" filter="url(#softShadow)"/>
+  <text x="882" y="136" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#dfe5eb">Projector screen</text>
+  <rect x="800" y="103" width="54" height="42" rx="3" fill="#8b5e3c" stroke="#d7b48b" stroke-width="2" filter="url(#softShadow)"/>
+  <text x="789" y="93" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#f1d7b5">Teacher podium</text>
+
+  <!-- Desks and chairs. -->
+  <g filter="url(#softShadow)">
+    <rect x="759.9" y="105.3" width="22.6" height="45.7" rx="2" fill="#9c6b37" stroke="#d7b48b" stroke-width="1"/>
+    <rect x="759.9" y="160.4" width="22.6" height="45.7" rx="2" fill="#9c6b37" stroke="#d7b48b" stroke-width="1"/>
+    <rect x="701.0" y="105.3" width="22.6" height="45.7" rx="2" fill="#9c6b37" stroke="#d7b48b" stroke-width="1"/>
+    <rect x="701.0" y="160.4" width="22.6" height="45.7" rx="2" fill="#9c6b37" stroke="#d7b48b" stroke-width="1"/>
+    <rect x="642.2" y="105.3" width="22.6" height="45.7" rx="2" fill="#9c6b37" stroke="#d7b48b" stroke-width="1"/>
+    <rect x="642.2" y="160.4" width="22.6" height="45.7" rx="2" fill="#9c6b37" stroke="#d7b48b" stroke-width="1"/>
+  </g>
+  <text x="681" y="229" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#e4d2bd">3 rows x 2 class tables</text>
+
+  <g fill="#cfd7df" stroke="#5f6d7a" stroke-width="1.5">
+    <circle cx="743.1" cy="115.4" r="8"/>
+    <circle cx="743.1" cy="140.9" r="8"/>
+    <circle cx="743.1" cy="170.5" r="8"/>
+    <circle cx="743.1" cy="196.0" r="8"/>
+    <circle cx="684.3" cy="115.4" r="8"/>
+    <circle cx="684.3" cy="140.9" r="8"/>
+    <circle cx="684.3" cy="170.5" r="8"/>
+    <circle cx="684.3" cy="196.0" r="8"/>
+    <circle cx="625.4" cy="115.4" r="8"/>
+    <circle cx="625.4" cy="140.9" r="8"/>
+    <circle cx="625.4" cy="170.5" r="8"/>
+    <circle cx="625.4" cy="196.0" r="8"/>
+  </g>
+
+  <!-- People and walking path. -->
+  <path d="M796 162 L865 162 L865 192 L796 192 Z" fill="none" stroke="#4f83cc" stroke-width="3" stroke-dasharray="8 5"/>
+  <circle cx="700" cy="192" r="10" fill="#2e8b57" stroke="#f1f1f1" stroke-width="2"/>
+  <circle cx="700" cy="259" r="10" fill="#c83232" stroke="#f1f1f1" stroke-width="2"/>
+  <circle cx="796" cy="162" r="10" fill="#2f65c9" stroke="#f1f1f1" stroke-width="2"/>
+  <text x="714" y="196" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#e9eef5">green person</text>
+  <text x="714" y="263" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#e9eef5">red person</text>
+  <text x="807" y="159" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#e9eef5">blue walking actor</text>
+
+  <!-- Pan tilt camera and field of view. -->
+  <path d="M461.9 191.9 L662 112 L662 272 Z" fill="#ffd966" opacity="0.12" stroke="#ffd966" stroke-width="2" stroke-dasharray="7 5"/>
+  <circle cx="461.9" cy="191.9" r="13" fill="#ffcf33" stroke="#6d5411" stroke-width="2"/>
+  <path d="M461.9 191.9 L493 191.9" stroke="#6d5411" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="390" y="178" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#fff0b0">Pan/tilt camera</text>
+  <text x="389" y="339" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#607080">camera pose: x=11.25 m, y=3.25 m, z=2.35 m; pan +/-45 deg, tilt 0-45 deg</text>
+
+  <!-- Walkway/tape cue. -->
+  <path d="M48 244 C190 245 328 247 474 248 C594 249 713 248 830 244" fill="none" stroke="#d7c221" stroke-width="5" stroke-dasharray="16 12" opacity="0.9"/>
+  <text x="238" y="236" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#f5e87a">yellow tape / walkway cue</text>
+
+  <!-- Legend. -->
+  <g transform="translate(40 352)">
+    <rect x="0" y="0" width="920" height="26" rx="4" fill="#ffffff" stroke="#d5dadd"/>
+    <circle cx="18" cy="13" r="7" fill="#ffcf33" stroke="#6d5411"/>
+    <text x="31" y="17" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#28313a">pan/tilt camera</text>
+    <rect x="157" y="7" width="18" height="12" rx="2" fill="#9c6b37" stroke="#d7b48b"/>
+    <text x="183" y="17" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#28313a">class table</text>
+    <circle cx="286" cy="13" r="7" fill="#cfd7df" stroke="#5f6d7a"/>
+    <text x="300" y="17" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#28313a">rolling chair</text>
+    <circle cx="405" cy="13" r="7" fill="#c83232"/>
+    <text x="419" y="17" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#28313a">tracked colored actor</text>
+    <rect x="570" y="7" width="18" height="12" rx="1" fill="#090909" stroke="#999"/>
+    <text x="596" y="17" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#28313a">door</text>
+    <rect x="690" y="7" width="24" height="12" rx="1" fill="#e9ecef" stroke="#40464d"/>
+    <text x="722" y="17" font-family="Arial, Helvetica, sans-serif" font-size="12" fill="#28313a">projector screen</text>
+  </g>
+</svg>

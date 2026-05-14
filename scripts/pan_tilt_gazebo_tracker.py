@@ -90,6 +90,7 @@ class GazeboPanTiltTracker:
         vertical_fov_deg: float,
         pan_deadband_px: float,
         tilt_deadband_px: float,
+        tilt_setpoint_y_fraction: float,
         gain_scale: float,
         max_step_deg: float,
         control_rate_hz: float,
@@ -156,6 +157,7 @@ class GazeboPanTiltTracker:
             tilt_fov_deg=vertical_fov_deg,
             pan_deadband_px=pan_deadband_px,
             tilt_deadband_px=tilt_deadband_px,
+            tilt_setpoint_y_fraction=tilt_setpoint_y_fraction,
             gain_scale=gain_scale,
             max_step_deg=max_step_deg,
         )
@@ -469,6 +471,7 @@ def main() -> None:
     parser.add_argument("--vertical-fov-deg", type=float, default=46.8)
     parser.add_argument("--pan-deadband-px", type=float, default=28.0, help="Ignore small horizontal image error to reduce Gazebo demo jitter")
     parser.add_argument("--tilt-deadband-px", type=float, default=40.0, help="Ignore small vertical image error")
+    parser.add_argument("--tilt-setpoint-y-fraction", type=float, default=0.5, help="Desired vertical target location as a fraction of image height")
     parser.add_argument("--gain-scale", type=float, default=0.45, help="Camera tracker controller gain scale")
     parser.add_argument("--max-step-deg", type=float, default=1.5, help="Maximum joint step per processed frame")
     parser.add_argument("--control-rate-hz", type=float, default=4.0, help="Maximum visual-servo control updates per second")
@@ -512,6 +515,7 @@ def main() -> None:
         vertical_fov_deg=args.vertical_fov_deg,
         pan_deadband_px=args.pan_deadband_px,
         tilt_deadband_px=args.tilt_deadband_px,
+        tilt_setpoint_y_fraction=args.tilt_setpoint_y_fraction,
         gain_scale=args.gain_scale,
         max_step_deg=args.max_step_deg,
         control_rate_hz=args.control_rate_hz,
