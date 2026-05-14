@@ -15,7 +15,8 @@ The repository is intentionally small enough for an Industrial Engineering stude
 - Optional VLM JSON grounding for richer target descriptions.
 - A target selector that ranks detections by command match, confidence, center distance, target size, and sticky target preference.
 - A pan/tilt controller that converts image error into bounded joint commands.
-- A stable Gazebo pose-based demo that avoids local camera-rendering issues.
+- A Gazebo camera-vision demo that tracks colored people from the rendered pan/tilt camera image.
+- A Gazebo pose-based tracker kept as a deterministic debug fallback.
 - Optional speech, camera-detection, and class-host bridges for advanced experiments.
 - Unit tests for the parser, selector, controller, runtime input handling, vision utilities, and pipeline.
 
@@ -37,10 +38,12 @@ scripts/
                                    Open tracking world server only
   run_gazebo_room_427_camera_view.sh
                                    Open only the pan/tilt camera POV
+  run_gazebo_room_427_camera_tracker.sh
+                                   Run the image-based color-proxy tracker
   run_gazebo_room_427_pose_tracker.sh
-                                   Run the stable Gazebo pose tracker
+                                   Run the ground-truth pose debug tracker
   pan_tilt_gazebo_pose_tracker.py  Pose-topic demo tracker
-  pan_tilt_gazebo_tracker.py       Optional camera/YOLO tracker
+  pan_tilt_gazebo_tracker.py       Gazebo camera tracker: color-proxy or YOLO
   mic_command_listener.py          Optional microphone-to-command bridge
   pan_tilt_socket_client.py        Optional class host bridge
   demo_pan_tilt_pipeline.py        Small parser/selector/controller demo
@@ -83,7 +86,7 @@ In a second terminal:
 
 ```bash
 echo "track the red person" > runtime_command.txt
-./scripts/run_gazebo_room_427_pose_tracker.sh
+./scripts/run_gazebo_room_427_camera_tracker.sh
 ```
 
 Try other commands while the tracker is running:
@@ -123,20 +126,21 @@ Terminal 4, tracking:
 
 ```bash
 echo "track the red person" > runtime_command.txt
-./scripts/run_gazebo_room_427_pose_tracker.sh
+./scripts/run_gazebo_room_427_camera_tracker.sh
 ```
 
-Move the world-view GUI and camera-POV GUI onto different screens. The camera POV comes from the sensor topic `/world/room_427_tracking_test/model/pantilt/link/tilt_link/sensor/camera/image`.
+Move the world-view GUI and camera-POV GUI onto different screens. The camera POV comes from the sensor topic `/world/room_427_tracking_test/model/pantilt/link/tilt_link/sensor/camera/image`. The default camera tracker locks tilt at a classroom-viewing angle and tracks horizontally, which keeps the demo from diving into the floor. To experiment with full pan/tilt tracking, remove `--lock-tilt` from `scripts/run_gazebo_room_427_camera_tracker.sh`.
 
 ## Optional Advanced Paths
 
-The stable path above is the one to demo first. The repo also keeps a few higher-risk extension paths because they are useful for the original project scope:
+The camera path above is the one to demo first. It uses real Gazebo camera pixels and a deterministic color-proxy detector, so it proves the camera POV is part of the loop without requiring a downloaded YOLO model. The repo also keeps a few extension and debug paths:
 
 - `scripts/mic_command_listener.py` records short macOS microphone clips and writes transcribed text into `runtime_command.txt`.
-- `scripts/pan_tilt_gazebo_tracker.py` uses the Gazebo camera image topic plus Ultralytics tracking instead of ground-truth poses.
+- `scripts/pan_tilt_gazebo_tracker.py --detector yolo` uses the Gazebo camera image topic plus Ultralytics tracking instead of color thresholds.
+- `scripts/run_gazebo_room_427_pose_tracker.sh` reads Gazebo ground-truth poses instead of camera pixels. Use it only to debug target selection and pan/tilt control when rendering is failing.
 - `scripts/pan_tilt_socket_client.py` is a bridge toward the class host socket protocol.
 
-These paths may require local packages such as `opencv-python`, `ultralytics`, `mlx-whisper`, `openai-whisper`, `python-socketio`, or course-specific `ub_camera` utilities. Keep those dependencies and model weights local; do not commit `.pt` files or virtual environments.
+YOLO, speech, and host paths may require local packages such as `opencv-python`, `ultralytics`, `mlx-whisper`, `openai-whisper`, `python-socketio`, or course-specific `ub_camera` utilities. Keep those dependencies and model weights local; do not commit `.pt` files or virtual environments.
 
 Example optional installs:
 
@@ -151,7 +155,7 @@ The room scene is generated from [Simulation/generate_room_427_furnishings.py](S
 
 ```bash
 python3 Simulation/generate_room_427_furnishings.py
-xmllint --noout Simulation/Models/room_427_furnishings/model.sdf
+xmllint --noout Simulation/models/room_427_furnishings/model.sdf
 ```
 
 The current scene intentionally does **not** include the middle conveyor. It keeps the classroom/lab feel with tables, chairs, cabinets, racks, boxes, workcell props, floor tape, blinds, and people.
@@ -165,7 +169,7 @@ Good first changes:
 3. Add command words in `src/ie582_final_project/command_parser.py`.
 4. Tune selection weights in `src/ie582_final_project/target_selector.py`.
 5. Tune camera motion in `src/ie582_final_project/pan_tilt_controller.py`.
-6. Try the optional camera tracker after the pose tracker is stable.
+6. Improve color-proxy or YOLO detections in `src/ie582_final_project/vision.py`.
 7. Add or update tests in `tests/`.
 
 Keep changes small and test after each one.

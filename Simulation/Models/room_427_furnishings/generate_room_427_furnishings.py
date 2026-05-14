@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import cos, sin
+from math import atan2, cos, sin, sqrt
 from pathlib import Path
 from typing import Iterable, Tuple
 
 
 ROOT = Path(__file__).resolve().parent
-MODELS_DIR = ROOT / "Models"
+MODELS_DIR = ROOT.parent
 SDF_VERSION = "1.10"
 
 
@@ -43,6 +43,11 @@ MATERIALS = {
     "marker_black": Material("0.0 0.0 0.0 1", "0.0 0.0 0.0 1", "0.05 0.05 0.05 1"),
     "marker_white": Material("1 1 1 1", "1 1 1 1", "0.08 0.08 0.08 1"),
     "blind": Material("0.72 0.72 0.68 1", "0.78 0.78 0.74 1", "0.12 0.12 0.12 1"),
+    "screen_border": Material("0.04 0.04 0.045 1", "0.05 0.05 0.055 1", "0.12 0.12 0.12 1"),
+    "screen_surface": Material("0.88 0.90 0.88 1", "0.96 0.98 0.96 1", "0.18 0.18 0.18 1"),
+    "podium_wood": Material("0.36 0.22 0.12 1", "0.45 0.29 0.16 1", "0.18 0.12 0.08 1"),
+    "projector": Material("0.78 0.78 0.76 1", "0.86 0.86 0.83 1", "0.35 0.35 0.34 1"),
+    "door_wood": Material("0.42 0.25 0.13 1", "0.52 0.31 0.16 1", "0.16 0.10 0.06 1"),
     "skin": Material("0.72 0.48 0.34 1", "0.76 0.52 0.38 1", "0.12 0.08 0.06 1"),
     "hair": Material("0.06 0.045 0.035 1", "0.08 0.06 0.045 1", "0.04 0.03 0.02 1"),
     "pants": Material("0.06 0.08 0.13 1", "0.08 0.11 0.18 1", "0.10 0.10 0.12 1"),
@@ -172,6 +177,32 @@ def sphere_link(
     </link>"""
 
 
+def cylinder_between(
+    name: str,
+    start: Tuple[float, float, float],
+    end: Tuple[float, float, float],
+    radius: float,
+    material: Material,
+    collision: bool = True,
+) -> str:
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    dz = end[2] - start[2]
+    length = sqrt(dx * dx + dy * dy + dz * dz)
+    horizontal = sqrt(dx * dx + dy * dy)
+    yaw = atan2(dy, dx) if horizontal > 1e-6 else 0.0
+    pitch = atan2(horizontal, dz)
+    center = (
+        (start[0] + end[0]) * 0.5,
+        (start[1] + end[1]) * 0.5,
+        (start[2] + end[2]) * 0.5,
+        0.0,
+        pitch,
+        yaw,
+    )
+    return cylinder_link(name, center, radius, length, material, collision)
+
+
 def add_mobile_table(parts: list[str], prefix: str, x: float, y: float, yaw: float = 0.0) -> None:
     parts.append(
         box_link(
@@ -246,6 +277,65 @@ def add_chair(parts: list[str], prefix: str, x: float, y: float, yaw: float = 0.
         )
 
 
+def add_plastic_wheel_chair(parts: list[str], prefix: str, x: float, y: float, yaw: float = 0.0) -> None:
+    parts.append(box_link(f"{prefix}_seat", world_pose(x, y, 0, yaw, 0, 0, 0.48), (0.48, 0.47, 0.075), MATERIALS["chair_seat"]))
+    parts.append(box_link(f"{prefix}_back", world_pose(x, y, 0, yaw, -0.22, 0, 0.82), (0.07, 0.50, 0.62), MATERIALS["chair_seat"]))
+    parts.append(cylinder_link(f"{prefix}_gas_lift", world_pose(x, y, 0, yaw, 0, 0, 0.30), 0.038, 0.46, MATERIALS["chair_frame"]))
+    for idx, angle in enumerate((0.0, 1.2566, 2.5133, 3.7699, 5.0265), start=1):
+        lx, ly = rotate_xy(0.26, 0, angle)
+        parts.append(box_link(f"{prefix}_star_arm_{idx}", world_pose(x, y, 0, yaw, lx * 0.5, ly * 0.5, 0.10, angle), (0.30, 0.035, 0.035), MATERIALS["chair_frame"]))
+        parts.append(cylinder_link(f"{prefix}_caster_{idx}", world_pose(x, y, 0, yaw, lx, ly, 0.065, angle, roll=1.5708), 0.045, 0.035, MATERIALS["rubber"]))
+
+
+def add_high_chair(parts: list[str], prefix: str, x: float, y: float, yaw: float = 0.0) -> None:
+    parts.append(box_link(f"{prefix}_seat", world_pose(x, y, 0, yaw, 0, 0, 0.76), (0.42, 0.42, 0.065), MATERIALS["chair_seat"]))
+    parts.append(box_link(f"{prefix}_back", world_pose(x, y, 0, yaw, -0.20, 0, 1.10), (0.06, 0.44, 0.55), MATERIALS["chair_seat"]))
+    for idx, (lx, ly) in enumerate(((0.15, 0.15), (0.15, -0.15), (-0.15, 0.15), (-0.15, -0.15)), start=1):
+        parts.append(cylinder_link(f"{prefix}_leg_{idx}", world_pose(x, y, 0, yaw, lx, ly, 0.39), 0.022, 0.74, MATERIALS["chair_frame"]))
+    parts.append(cylinder_link(f"{prefix}_foot_ring_front", world_pose(x, y, 0, yaw, 0.0, 0.22, 0.37, roll=1.5708), 0.018, 0.46, MATERIALS["chair_frame"], collision=False))
+    parts.append(cylinder_link(f"{prefix}_foot_ring_back", world_pose(x, y, 0, yaw, 0.0, -0.22, 0.37, roll=1.5708), 0.018, 0.46, MATERIALS["chair_frame"], collision=False))
+
+
+def add_fixed_bench(parts: list[str], prefix: str, x: float, y: float, yaw: float = 1.5708) -> None:
+    parts.append(box_link(f"{prefix}_top", world_pose(x, y, 0, yaw, 0, 0, 0.73), (1.65, 0.48, 0.055), MATERIALS["table_top"]))
+    parts.append(box_link(f"{prefix}_front_apron", world_pose(x, y, 0, yaw, 0, 0.265, 0.66), (1.69, 0.035, 0.14), MATERIALS["table_edge"]))
+    parts.append(box_link(f"{prefix}_back_apron", world_pose(x, y, 0, yaw, 0, -0.265, 0.66), (1.69, 0.035, 0.14), MATERIALS["table_edge"]))
+    for idx, (lx, ly) in enumerate(((0.72, 0.19), (0.72, -0.19), (-0.72, 0.19), (-0.72, -0.19)), start=1):
+        parts.append(box_link(f"{prefix}_leg_{idx}", world_pose(x, y, 0, yaw, lx, ly, 0.36), (0.06, 0.06, 0.68), MATERIALS["metal"]))
+
+
+def add_projection_area(parts: list[str]) -> None:
+    parts.append(box_link("projector_screen_surface", (0.085, 3.20, 1.58, 0, 0, 0), (0.035, 2.70, 1.28), MATERIALS["screen_surface"], collision=False))
+    parts.append(box_link("projector_screen_top_rail", (0.10, 3.20, 2.24, 0, 0, 0), (0.055, 2.86, 0.055), MATERIALS["screen_border"], collision=False))
+    parts.append(box_link("projector_screen_bottom_rail", (0.10, 3.20, 0.92, 0, 0, 0), (0.055, 2.86, 0.045), MATERIALS["screen_border"], collision=False))
+    parts.append(box_link("projector_screen_left_rail", (0.10, 1.77, 1.58, 0, 0, 0), (0.055, 0.045, 1.36), MATERIALS["screen_border"], collision=False))
+    parts.append(box_link("projector_screen_right_rail", (0.10, 4.63, 1.58, 0, 0, 0), (0.055, 0.045, 1.36), MATERIALS["screen_border"], collision=False))
+
+    parts.append(box_link("professor_podium_body", (0.95, 4.70, 0.55, 0, 0, 0), (0.70, 0.52, 1.10), MATERIALS["podium_wood"]))
+    parts.append(box_link("professor_podium_sloped_top", (0.88, 4.70, 1.13, 0, 0.12, 0), (0.76, 0.56, 0.075), MATERIALS["podium_wood"]))
+    parts.append(box_link("professor_podium_panel", (0.58, 4.70, 0.82, 0, 0, 0), (0.055, 0.50, 0.46), MATERIALS["table_edge"], collision=False))
+    parts.append(cylinder_link("podium_microphone_stem", (0.62, 4.58, 1.30, 0.28, 0, 0), 0.012, 0.28, MATERIALS["marker_black"], collision=False))
+    parts.append(sphere_link("podium_microphone_head", (0.57, 4.52, 1.42, 0, 0, 0), 0.035, MATERIALS["marker_black"], collision=False))
+
+    parts.append(box_link("ceiling_projector_body", (3.20, 3.22, 2.43, 0, 0, 0), (0.48, 0.32, 0.16), MATERIALS["projector"], collision=False))
+    parts.append(cylinder_link("ceiling_projector_lens", (2.92, 3.22, 2.43, 0, 1.5708, 0), 0.065, 0.12, MATERIALS["screen_border"], collision=False))
+    parts.append(box_link("ceiling_projector_mount", (3.20, 3.22, 2.58, 0, 0, 0), (0.08, 0.08, 0.28), MATERIALS["metal"], collision=False))
+
+
+def add_front_wall_door(parts: list[str]) -> None:
+    parts.append(box_link("front_wall_demo_door_panel", (0.075, 5.42, 1.05, 0, 0, 0), (0.045, 0.92, 2.10), MATERIALS["door_wood"], collision=False))
+    parts.append(cylinder_link("front_wall_demo_door_handle", (0.035, 5.03, 1.08, 0, 1.5708, 0), 0.035, 0.04, MATERIALS["cabinet_handle"], collision=False))
+
+
+def add_conveyor(parts: list[str], prefix: str, x: float, y: float, yaw: float, length: float = 3.6) -> None:
+    parts.append(box_link(f"{prefix}_frame", world_pose(x, y, 0, yaw, 0, 0, 0.42), (length, 0.56, 0.16), MATERIALS["metal"]))
+    parts.append(box_link(f"{prefix}_belt", world_pose(x, y, 0, yaw, 0, 0, 0.53), (length - 0.16, 0.44, 0.035), MATERIALS["rubber"]))
+    for idx, lx in enumerate((-length / 2 + 0.38, length / 2 - 0.38), start=1):
+        parts.append(cylinder_link(f"{prefix}_roller_{idx}", world_pose(x, y, 0, yaw, lx, 0, 0.55, roll=1.5708), 0.09, 0.50, MATERIALS["rack"]))
+    for idx, (lx, ly) in enumerate(((length / 2 - 0.32, 0.22), (length / 2 - 0.32, -0.22), (-length / 2 + 0.32, 0.22), (-length / 2 + 0.32, -0.22)), start=1):
+        parts.append(box_link(f"{prefix}_leg_{idx}", world_pose(x, y, 0, yaw, lx, ly, 0.24), (0.055, 0.055, 0.44), MATERIALS["metal"]))
+
+
 def add_cabinet(parts: list[str], prefix: str, x: float, y: float, yaw: float, width: float = 1.15) -> None:
     parts.append(box_link(f"{prefix}_body", world_pose(x, y, 0, yaw, 0, 0, 0.88), (width, 0.42, 1.76), MATERIALS["cabinet_blue"]))
     parts.append(box_link(f"{prefix}_top_trim", world_pose(x, y, 0, yaw, 0, 0, 1.78), (width + 0.05, 0.45, 0.05), MATERIALS["metal"]))
@@ -283,23 +373,23 @@ def add_boxes(parts: list[str], prefix: str, placements: Iterable[Tuple[float, f
 
 def add_yellow_tape(parts: list[str]) -> None:
     # Segment coordinates are room-local in the existing 24.2 m x 6.54 m Room 427 frame.
+    # The tape marks the student aisle, the teaching clearance, the door approaches, and the conveyor boundary.
     segments = [
-        ("front_run", 12.1, 0.78, 15.8, 0.06, 0.0),
-        ("front_left_turn", 4.2, 1.33, 1.10, 0.06, 1.5708),
-        ("front_right_turn", 20.0, 1.35, 1.14, 0.06, 1.5708),
-        ("center_run_left", 6.7, 2.44, 5.0, 0.06, 0.0),
-        ("center_run_right", 14.6, 2.44, 7.1, 0.06, 0.0),
-        ("middle_step_left", 9.3, 2.80, 0.82, 0.06, 0.72),
-        ("middle_step_right", 11.0, 2.80, 0.82, 0.06, -0.72),
-        ("back_run", 12.2, 5.55, 14.7, 0.06, 0.0),
-        ("back_left_drop", 5.0, 4.86, 1.38, 0.06, 1.5708),
-        ("back_right_drop", 19.4, 4.86, 1.38, 0.06, 1.5708),
-        ("workcell_box_front", 17.95, 3.78, 2.30, 0.06, 0.0),
-        ("workcell_box_back", 17.95, 5.02, 2.30, 0.06, 0.0),
-        ("workcell_box_left", 16.80, 4.40, 1.24, 0.06, 1.5708),
-        ("workcell_box_right", 19.10, 4.40, 1.24, 0.06, 1.5708),
-        ("door_jog", 22.0, 5.85, 1.55, 0.06, 0.0),
-        ("door_short_drop", 22.75, 5.35, 1.0, 0.06, 1.5708),
+        ("front_teaching_clearance", 2.25, 3.27, 5.70, 0.06, 1.5708),
+        ("student_aisle_window_edge", 7.95, 2.90, 11.40, 0.06, 0.0),
+        ("student_aisle_door_edge", 7.95, 3.64, 11.40, 0.06, 0.0),
+        ("class_conveyor_divider", 13.90, 3.27, 5.70, 0.06, 1.5708),
+        ("front_door_approach", 1.10, 5.42, 2.10, 0.06, 0.0),
+        ("front_door_side_mark_a", 0.72, 4.96, 0.82, 0.06, 1.5708),
+        ("front_door_side_mark_b", 0.72, 5.88, 0.82, 0.06, 1.5708),
+        ("back_door_run", 17.85, 5.78, 8.45, 0.06, 0.0),
+        ("back_door_2_left_side", 13.08, 6.02, 0.48, 0.06, 1.5708),
+        ("back_door_2_right_side", 14.92, 6.02, 0.48, 0.06, 1.5708),
+        ("back_door_1_left_side", 20.84, 6.02, 0.48, 0.06, 1.5708),
+        ("back_door_1_right_side", 22.56, 6.02, 0.48, 0.06, 1.5708),
+        ("conveyor_front_boundary", 18.50, 2.58, 6.40, 0.06, 0.0),
+        ("conveyor_back_boundary", 18.50, 4.92, 6.40, 0.06, 0.0),
+        ("conveyor_exit_to_back_door", 21.70, 5.35, 0.86, 0.06, 1.5708),
     ]
     for name, x, y, length, width, yaw in segments:
         parts.append(box_link(f"yellow_tape_{name}", (x, y, 0.036, 0, 0, yaw), (length, width, 0.006), MATERIALS["yellow_tape"], collision=False))
@@ -350,37 +440,46 @@ def build_furnishings_model() -> str:
     add_tile_seams(parts)
     add_yellow_tape(parts)
     add_blinds(parts)
-    add_apriltag_board(parts)
 
-    table_positions = [
-        (4.6, 1.34), (7.9, 1.34), (11.2, 1.34), (14.5, 1.34),
-        (4.6, 4.32), (7.9, 4.32), (11.2, 4.32), (14.5, 4.32),
+    add_projection_area(parts)
+    add_front_wall_door(parts)
+
+    fixed_benches = [
+        ("front_right", 3.45, 1.70),
+        ("front_left", 3.45, 4.66),
+        ("rear_right", 5.45, 1.70),
+        ("rear_left", 5.45, 4.66),
     ]
-    for idx, (x, y) in enumerate(table_positions, start=1):
-        add_mobile_table(parts, f"student_table_{idx}", x, y, 0.0)
-        add_chair(parts, f"student_chair_{idx}_south", x - 0.36, y - 0.78, 1.5708)
-        add_chair(parts, f"student_chair_{idx}_north", x + 0.36, y + 0.78, -1.5708)
+    for bench_idx, (suffix, x, y) in enumerate(fixed_benches, start=1):
+        add_fixed_bench(parts, f"fixed_student_bench_{suffix}", x, y)
+        for chair_idx, dy in enumerate((-0.38, 0.38), start=1):
+            add_plastic_wheel_chair(parts, f"plastic_wheel_chair_{bench_idx}_{chair_idx}", x + 0.62, y + dy, 3.1416)
 
-    add_mobile_table(parts, "instructor_demo_table", 20.95, 2.10, 0.0)
-    add_chair(parts, "instructor_chair", 21.85, 2.10, 3.1416)
-    add_rack(parts, "mini_factory_rack", 20.45, 4.78, 0.0)
-    add_workcell(parts, "robot_workcell", 16.35, 4.68, 0.0)
+    tall_table_rows = (8.05, 9.75, 11.45)
+    tall_table_columns = (1.24, 2.12, 4.42, 5.30)
+    tall_idx = 1
+    for row_x in tall_table_rows:
+        for col_y in tall_table_columns:
+            add_mobile_table(parts, f"tall_mobile_table_{tall_idx}", row_x, col_y, 0.0)
+            add_high_chair(parts, f"high_chair_{tall_idx}", row_x + 0.72, col_y, 3.1416)
+            tall_idx += 1
 
-    add_cabinet(parts, "blue_cabinet_left", 9.45, 5.92, 0.0)
-    add_cabinet(parts, "blue_cabinet_mid", 11.25, 5.92, 0.0)
-    add_cabinet(parts, "blue_cabinet_right", 13.05, 5.92, 0.0)
-    add_cabinet(parts, "blue_cabinet_far_right", 22.65, 5.80, 0.0, width=1.05)
+    add_conveyor(parts, "conveyor_main", 17.20, 3.32, 0.0, length=4.20)
+    add_conveyor(parts, "conveyor_return", 19.85, 4.12, 0.0, length=2.70)
+    add_workcell(parts, "robot_workcell", 20.75, 2.02, 0.0)
+    add_rack(parts, "mini_factory_rack", 18.20, 5.30, 0.0)
+    add_cabinet(parts, "tool_cabinet_conveyor", 15.05, 5.34, 0.0, width=1.05)
 
     add_boxes(
         parts,
         "loose_box",
         (
-            (18.45, 4.95, 0.22, 0.08, "box_cardboard"),
-            (19.08, 5.20, 0.22, -0.12, "tote_orange"),
-            (20.45, 4.75, 1.02, 0.0, "tote_gray"),
-            (20.10, 4.75, 1.55, 0.0, "box_cardboard"),
-            (21.0, 4.75, 0.48, 0.0, "tote_orange"),
-            (16.10, 5.28, 0.95, 0.05, "tote_gray"),
+            (16.30, 4.86, 0.22, 0.08, "box_cardboard"),
+            (17.05, 4.92, 0.22, -0.12, "tote_orange"),
+            (18.20, 5.30, 1.02, 0.0, "tote_gray"),
+            (18.48, 5.30, 1.55, 0.0, "box_cardboard"),
+            (20.92, 4.62, 0.48, 0.0, "tote_orange"),
+            (21.42, 3.82, 0.22, 0.05, "box_cardboard"),
         ),
     )
 
@@ -396,17 +495,68 @@ def build_furnishings_model() -> str:
 
 def build_person_proxy_model(color_name: str) -> str:
     shirt = PERSON_SHIRTS[color_name]
+    pose_styles = {
+        "red": {
+            "left_arm": ((0.0, 0.23, 1.35), (0.10, 0.31, 1.12), (0.20, 0.25, 0.92)),
+            "right_arm": ((0.0, -0.23, 1.35), (-0.08, -0.30, 1.11), (-0.18, -0.28, 0.90)),
+            "left_leg": ((0.0, 0.08, 0.84), (0.08, 0.10, 0.47), (0.16, 0.09, 0.10)),
+            "right_leg": ((0.0, -0.08, 0.84), (-0.06, -0.08, 0.47), (-0.13, -0.09, 0.10)),
+            "left_foot_yaw": 0.10,
+            "right_foot_yaw": -0.08,
+        },
+        "green": {
+            "left_arm": ((0.0, 0.23, 1.35), (0.04, 0.34, 1.51), (0.02, 0.39, 1.70)),
+            "right_arm": ((0.0, -0.23, 1.35), (0.04, -0.31, 1.12), (0.10, -0.28, 0.92)),
+            "left_leg": ((0.0, 0.08, 0.84), (0.02, 0.10, 0.47), (0.04, 0.10, 0.10)),
+            "right_leg": ((0.0, -0.08, 0.84), (-0.03, -0.10, 0.47), (-0.05, -0.10, 0.10)),
+            "left_foot_yaw": 0.04,
+            "right_foot_yaw": -0.05,
+        },
+        "blue": {
+            "left_arm": ((0.0, 0.23, 1.35), (-0.08, 0.30, 1.11), (-0.18, 0.28, 0.91)),
+            "right_arm": ((0.0, -0.23, 1.35), (0.11, -0.31, 1.13), (0.19, -0.25, 0.94)),
+            "left_leg": ((0.0, 0.08, 0.84), (-0.07, 0.09, 0.47), (-0.15, 0.09, 0.10)),
+            "right_leg": ((0.0, -0.08, 0.84), (0.09, -0.10, 0.47), (0.17, -0.10, 0.10)),
+            "left_foot_yaw": -0.08,
+            "right_foot_yaw": 0.10,
+        },
+        "yellow": {
+            "left_arm": ((0.0, 0.23, 1.35), (-0.03, 0.31, 1.12), (-0.08, 0.28, 0.92)),
+            "right_arm": ((0.0, -0.23, 1.35), (0.17, -0.28, 1.23), (0.31, -0.16, 1.14)),
+            "left_leg": ((0.0, 0.08, 0.84), (-0.04, 0.13, 0.47), (-0.07, 0.16, 0.10)),
+            "right_leg": ((0.0, -0.08, 0.84), (0.04, -0.13, 0.47), (0.07, -0.16, 0.10)),
+            "left_foot_yaw": -0.18,
+            "right_foot_yaw": 0.18,
+        },
+    }
+    style = pose_styles[color_name]
     parts = [
-        cylinder_link("torso", (0, 0, 1.04, 0, 0, 0), 0.18, 0.74, shirt),
-        sphere_link("head", (0, 0, 1.55, 0, 0, 0), 0.15, MATERIALS["skin"]),
-        sphere_link("hair", (0, 0, 1.67, 0, 0, 0), 0.155, MATERIALS["hair"], collision=False),
-        cylinder_link("left_arm", (0, 0.22, 1.08, 0.18, 0, 0), 0.045, 0.62, MATERIALS["skin"]),
-        cylinder_link("right_arm", (0, -0.22, 1.08, -0.18, 0, 0), 0.045, 0.62, MATERIALS["skin"]),
-        cylinder_link("left_leg", (0, 0.08, 0.46, 0, 0, 0), 0.06, 0.82, MATERIALS["pants"]),
-        cylinder_link("right_leg", (0, -0.08, 0.46, 0, 0, 0), 0.06, 0.82, MATERIALS["pants"]),
-        box_link("left_shoe", (0.03, 0.08, 0.045, 0, 0, 0), (0.20, 0.09, 0.06), MATERIALS["shoe"]),
-        box_link("right_shoe", (0.03, -0.08, 0.045, 0, 0, 0), (0.20, 0.09, 0.06), MATERIALS["shoe"]),
+        box_link("torso", (0, 0, 1.11, 0, 0, 0), (0.25, 0.34, 0.56), shirt),
+        box_link("pelvis", (0, 0, 0.80, 0, 0, 0), (0.23, 0.28, 0.14), MATERIALS["pants"]),
+        cylinder_between("shoulders", (0, -0.23, 1.36), (0, 0.23, 1.36), 0.055, shirt),
+        cylinder_link("neck", (0, 0, 1.42, 0, 0, 0), 0.045, 0.13, MATERIALS["skin"], collision=False),
+        sphere_link("head", (0, 0, 1.56, 0, 0, 0), 0.13, MATERIALS["skin"]),
+        box_link("hair_cap", (-0.025, 0, 1.665, 0, 0, 0), (0.16, 0.22, 0.045), MATERIALS["hair"], collision=False),
+        box_link("hair_back", (-0.07, 0, 1.59, 0, 0, 0), (0.055, 0.20, 0.12), MATERIALS["hair"], collision=False),
     ]
+    for side in ("left", "right"):
+        shoulder, elbow, hand = style[f"{side}_arm"]
+        hip, knee, ankle = style[f"{side}_leg"]
+        parts.extend(
+            [
+                cylinder_between(f"{side}_upper_arm", shoulder, elbow, 0.043, shirt),
+                cylinder_between(f"{side}_forearm", elbow, hand, 0.034, MATERIALS["skin"]),
+                sphere_link(f"{side}_hand", (*hand, 0, 0, 0), 0.043, MATERIALS["skin"]),
+                cylinder_between(f"{side}_thigh", hip, knee, 0.055, MATERIALS["pants"]),
+                cylinder_between(f"{side}_shin", knee, ankle, 0.048, MATERIALS["pants"]),
+                box_link(
+                    f"{side}_shoe",
+                    (ankle[0] + 0.045, ankle[1], 0.04, 0, 0, style[f"{side}_foot_yaw"]),
+                    (0.22, 0.10, 0.07),
+                    MATERIALS["shoe"],
+                ),
+            ]
+        )
     return f"""<?xml version="1.0" ?>
 <sdf version="{SDF_VERSION}">
   <model name="person_proxy_{color_name}">
@@ -442,7 +592,7 @@ def main() -> None:
     write_model(
         "room_427_furnishings",
         build_furnishings_model(),
-        "Detailed Room 427 furniture, floor tape, tile seams, cabinets, lab props, blinds, and AprilTag board.",
+        "Room 427 demo layout with teaching wall, projector screen, podium, classroom tables, aisle tape, and conveyor workcell props.",
     )
     for color_name in PERSON_SHIRTS:
         write_model(

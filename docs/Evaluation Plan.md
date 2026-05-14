@@ -193,12 +193,14 @@ Suggested demo commands:
 Stable Gazebo command sequence:
 
 ```bash
-./scripts/run_gazebo_room_427_tracking_world_gui.sh
+./scripts/run_gazebo_room_427_tracking_world.sh
+gz sim -g
+./scripts/run_gazebo_room_427_camera_view.sh
 echo "track the red person" > runtime_command.txt
-./scripts/run_gazebo_room_427_pose_tracker.sh
+./scripts/run_gazebo_room_427_camera_tracker.sh
 ```
 
-The speech bridge and camera/YOLO tracker are useful stretch paths, but the pose tracker should be the baseline evidence because it is deterministic.
+The baseline evidence should come from the camera tracker because it uses the rendered pan/tilt camera image. The pose tracker remains useful as a deterministic debug fallback because it reads Gazebo ground-truth poses instead of camera pixels.
 
 ## 7. Stretch Goal Demo
 
@@ -220,7 +222,7 @@ To make the final submission stronger, save:
 
 Even a small table of results is better than only narrative claims.
 
-## 9. Final Evaluation Thesis
+## 9. Final Evaluation
 
 The final evaluation should demonstrate that the project is successful not when the camera merely moves, but when:
 

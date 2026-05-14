@@ -15,20 +15,13 @@ from typing import Optional, Tuple
 
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
-import cv2
 import numpy as np
 
 try:
-    from ultralytics import YOLO
-except ImportError as exc:
-    raise SystemExit(
-        "Missing Ultralytics. Install the project dependencies in the project .venv "
-        "before running the Gazebo tracker."
-    ) from exc
-
-try:
     from gz.msgs10 import image_pb2
+    from gz.msgs10.boolean_pb2 import Boolean
     from gz.msgs10.double_pb2 import Double
+    from gz.msgs10.pose_pb2 import Pose
     from gz.transport13 import Node
 except ImportError as exc:
     raise SystemExit(
@@ -44,7 +37,11 @@ if str(SRC_PATH) not in sys.path:
 from ie582_final_project.pan_tilt_controller import PanTiltControllerConfig
 from ie582_final_project.pan_tilt_pipeline import PanTiltTargetingPipeline
 from ie582_final_project.runtime_inputs import RuntimeCommandInputs
-from ie582_final_project.vision import build_scene_summary, ultralytics_results_to_detections
+from ie582_final_project.vision import (
+    build_scene_summary,
+    color_proxy_detections,
+    ultralytics_results_to_detections,
+)
 
 
 DEFAULT_TOPIC = "/world/room_427_tracking_test/model/pantilt/link/tilt_link/sensor/camera/image"
@@ -69,6 +66,7 @@ class GazeboPanTiltTracker:
         vlm_json_file: Optional[str],
         whisper_model: str,
         whisper_backend: str,
+        detector: str,
         yolo_model_name: str,
         conf_threshold: float,
         rows: int,
@@ -77,19 +75,40 @@ class GazeboPanTiltTracker:
         stream_port: int,
         protocol: str,
         no_stream: bool,
+        control_mode: str,
+        world_name: str,
+        model_pose_x: float,
+        model_pose_y: float,
+        model_pose_z: float,
+        model_base_yaw_deg: float,
+        pose_timeout_ms: int,
         pan_min_deg: float,
         pan_max_deg: float,
         tilt_min_deg: float,
         tilt_max_deg: float,
         horizontal_fov_deg: float,
         vertical_fov_deg: float,
+        pan_deadband_px: float,
+        tilt_deadband_px: float,
+        gain_scale: float,
+        max_step_deg: float,
+        control_rate_hz: float,
+        invert_pan: bool,
+        initial_pan_deg: float,
+        initial_tilt_deg: float,
+        lock_tilt: bool,
     ) -> None:
         self.topic = topic
         self.gazebo_model_name = gazebo_model_name
         self.node = Node()
+        self.detector = detector
         self.yolo_model_name = yolo_model_name
         self.conf_threshold = conf_threshold
         self._shutdown = False
+        self.initial_pan_deg = float(initial_pan_deg)
+        self.initial_tilt_deg = float(initial_tilt_deg)
+        self.invert_pan = bool(invert_pan)
+        self.lock_tilt = bool(lock_tilt)
 
         self.res_rows = rows
         self.res_cols = cols
@@ -97,14 +116,28 @@ class GazeboPanTiltTracker:
         self.stream_port = stream_port
         self.protocol = protocol
         self.no_stream = no_stream
+        self.control_mode = control_mode
+        self.pose_service = f"/world/{world_name}/set_pose"
+        self.model_pose_xyz = (
+            float(model_pose_x),
+            float(model_pose_y),
+            float(model_pose_z),
+        )
+        self.model_base_yaw_deg = float(model_base_yaw_deg)
+        self.pose_timeout_ms = int(pose_timeout_ms)
+        self.control_interval_s = 1.0 / max(float(control_rate_hz), 0.1)
 
         self._frame_lock = threading.Lock()
         self._latest_frame: Optional[np.ndarray] = None
         self._latest_frame_index = 0
         self._processed_frame_index = 0
+        self._last_control_time = 0.0
         self._received_frame = False
         self._warned_formats: set[int] = set()
         self._last_scene_summary = ""
+        self._last_target_log_time = 0.0
+        self._last_target_key: Optional[Tuple[Optional[int], str]] = None
+        self._last_hold_log_time = 0.0
 
         self.command_inputs = RuntimeCommandInputs(
             initial_command=command_text,
@@ -115,11 +148,16 @@ class GazeboPanTiltTracker:
             whisper_backend=whisper_backend,
         )
 
+        pan_fov_deg = -horizontal_fov_deg if self.invert_pan else horizontal_fov_deg
         controller_config = PanTiltControllerConfig(
             pan_joint_name="pan_joint",
             tilt_joint_name="tilt_joint",
-            pan_fov_deg=horizontal_fov_deg,
+            pan_fov_deg=pan_fov_deg,
             tilt_fov_deg=vertical_fov_deg,
+            pan_deadband_px=pan_deadband_px,
+            tilt_deadband_px=tilt_deadband_px,
+            gain_scale=gain_scale,
+            max_step_deg=max_step_deg,
         )
         self.pipeline = PanTiltTargetingPipeline(controller_config=controller_config)
         initial_command_text, initial_vlm_text, _ = self.command_inputs.poll()
@@ -127,29 +165,38 @@ class GazeboPanTiltTracker:
 
         self.joint_state = {
             "pan_joint": {
-                "angle_deg": 0.0,
+                "angle_deg": self.initial_pan_deg,
                 "min_angle": pan_min_deg,
                 "max_angle": pan_max_deg,
             },
             "tilt_joint": {
-                "angle_deg": 0.0,
+                "angle_deg": self.initial_tilt_deg,
                 "min_angle": tilt_min_deg,
                 "max_angle": tilt_max_deg,
             },
         }
 
-        self.pan_pub = self.node.advertise(
-            f"/model/{self.gazebo_model_name}/joint/pan_joint/0/cmd_pos",
-            Double,
-        )
-        self.tilt_pub = self.node.advertise(
-            f"/model/{self.gazebo_model_name}/joint/tilt_joint/0/cmd_pos",
-            Double,
-        )
+        self.pan_pubs = [
+            self.node.advertise(topic, Double)
+            for topic in (
+                f"/model/{self.gazebo_model_name}/joint/pan_joint/cmd_pos",
+                f"/model/{self.gazebo_model_name}/joint/pan_joint/0/cmd_pos",
+            )
+        ]
+        self.tilt_pubs = [
+            self.node.advertise(topic, Double)
+            for topic in (
+                f"/model/{self.gazebo_model_name}/joint/tilt_joint/cmd_pos",
+                f"/model/{self.gazebo_model_name}/joint/tilt_joint/0/cmd_pos",
+            )
+        ]
 
-        self.model = YOLO(self.yolo_model_name)
+        self.model = self._load_yolo_model() if self.detector == "yolo" else None
         self.node.subscribe(image_pb2.Image, self.topic, self._on_image_message)
         self._install_signal_handlers()
+        self._publish_joint_command("pan_joint", self.initial_pan_deg)
+        if not self.lock_tilt:
+            self._publish_joint_command("tilt_joint", self.initial_tilt_deg)
 
         if not self.no_stream:
             print(
@@ -158,6 +205,48 @@ class GazeboPanTiltTracker:
             )
         print(f"Subscribed to Gazebo topic: {self.topic}")
         print(f"Publishing pan/tilt commands for model: {self.gazebo_model_name}")
+        print(f"Pan control mode: {self.control_mode}")
+        if self.control_mode == "pose":
+            print(f"Pose control service: {self.pose_service}")
+        print(f"Detector mode: {self.detector}")
+        if self.invert_pan:
+            print("Pan direction inverted for the Gazebo pantilt model.")
+        if self.lock_tilt:
+            print("Tilt is fixed by the Gazebo model for a stable camera POV.")
+
+    def _load_yolo_model(self):
+        try:
+            from ultralytics import YOLO
+        except ImportError as exc:
+            raise SystemExit(
+                "Missing Ultralytics. Install optional vision dependencies with "
+                "`python3 -m pip install -e \".[vision]\"`, or run the default "
+                "`--detector color-proxy` mode."
+            ) from exc
+        return YOLO(self.yolo_model_name)
+
+    def _set_model_pan_pose(self, angle_deg: float) -> None:
+        pose = Pose()
+        pose.name = self.gazebo_model_name
+        pose.position.x, pose.position.y, pose.position.z = self.model_pose_xyz
+
+        yaw_rad = math.radians(self.model_base_yaw_deg + angle_deg)
+        pose.orientation.w = math.cos(yaw_rad / 2.0)
+        pose.orientation.z = math.sin(yaw_rad / 2.0)
+
+        try:
+            self.node.request(
+                self.pose_service,
+                pose,
+                Pose,
+                Boolean,
+                self.pose_timeout_ms,
+            )
+        except Exception as exc:
+            now = time.monotonic()
+            if now - self._last_hold_log_time >= 2.0:
+                print(f"[pose-control] set_pose failed: {exc}")
+                self._last_hold_log_time = now
 
     def _install_signal_handlers(self) -> None:
         def handle_signal(signum, frame):
@@ -180,13 +269,20 @@ class GazeboPanTiltTracker:
         print(f"[command] {intent.raw_text or command_text} -> {intent}")
 
     def _publish_joint_command(self, joint_name: str, angle_deg: float) -> None:
+        if self.control_mode == "pose" and joint_name == "pan_joint":
+            self._set_model_pan_pose(angle_deg)
+            self.joint_state[joint_name]["angle_deg"] = angle_deg
+            return
+
         msg = Double()
         msg.data = math.radians(angle_deg)
 
         if joint_name == "pan_joint":
-            self.pan_pub.publish(msg)
+            for publisher in self.pan_pubs:
+                publisher.publish(msg)
         elif joint_name == "tilt_joint":
-            self.tilt_pub.publish(msg)
+            for publisher in self.tilt_pubs:
+                publisher.publish(msg)
 
         self.joint_state[joint_name]["angle_deg"] = angle_deg
 
@@ -214,7 +310,7 @@ class GazeboPanTiltTracker:
 
         if pixel_format == image_pb2.L_INT8:
             gray = packed.reshape(height, width).copy()
-            return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+            return np.repeat(gray[:, :, None], 3, axis=2)
 
         frame = packed.reshape(height, width, channels)
         if pixel_format == image_pb2.RGB_INT8:
@@ -222,9 +318,9 @@ class GazeboPanTiltTracker:
         if pixel_format == image_pb2.BGR_INT8:
             return frame.copy()
         if pixel_format == image_pb2.RGBA_INT8:
-            return cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
+            return frame[:, :, [2, 1, 0]].copy()
         if pixel_format == image_pb2.BGRA_INT8:
-            return cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+            return frame[:, :, :3].copy()
         return None
 
     def _on_image_message(self, msg: image_pb2.Image) -> None:
@@ -248,21 +344,28 @@ class GazeboPanTiltTracker:
         frame, frame_index = self._get_latest_frame()
         if frame is None or frame_index == self._processed_frame_index:
             return False
-
-        self._processed_frame_index = frame_index
-        try:
-            results = self.model.track(
-                source=frame,
-                conf=self.conf_threshold,
-                persist=True,
-                verbose=False,
-            )
-        except Exception as exc:
-            print(f"[tracking] Ultralytics inference failed: {exc}")
-            time.sleep(0.5)
+        now = time.monotonic()
+        if now - self._last_control_time < self.control_interval_s:
             return False
 
-        detections = ultralytics_results_to_detections(results, frame=frame)
+        self._processed_frame_index = frame_index
+        self._last_control_time = now
+        if self.detector == "color-proxy":
+            detections = color_proxy_detections(frame)
+        else:
+            try:
+                results = self.model.track(
+                    source=frame,
+                    conf=self.conf_threshold,
+                    persist=True,
+                    verbose=False,
+                )
+            except Exception as exc:
+                print(f"[tracking] Ultralytics inference failed: {exc}")
+                time.sleep(0.5)
+                return False
+            detections = ultralytics_results_to_detections(results, frame=frame)
+
         if not detections:
             return True
 
@@ -273,15 +376,39 @@ class GazeboPanTiltTracker:
             robot_id=None,
         )
 
-        for joint_name, angle_deg in cmd.joint_targets.items():
+        joint_targets = dict(cmd.joint_targets)
+        if self.lock_tilt:
+            joint_targets.pop("tilt_joint", None)
+        joint_targets = {
+            joint_name: angle_deg
+            for joint_name, angle_deg in joint_targets.items()
+            if abs(angle_deg - self.joint_state[joint_name]["angle_deg"]) >= 1e-3
+        }
+
+        for joint_name, angle_deg in joint_targets.items():
             self._publish_joint_command(joint_name, angle_deg)
 
         scene_summary = build_scene_summary(detections, frame_width=frame.shape[1])
         if best is not None:
-            print(
-                f"target id={best.detection.track_id} label={best.detection.label} "
-                f"score={best.total:.3f} cmd={cmd.joint_targets}"
+            self._last_hold_log_time = 0.0
+            now = time.monotonic()
+            target_key = (best.detection.track_id, best.detection.label)
+            should_log_target = (
+                target_key != self._last_target_key
+                or now - self._last_target_log_time >= 1.0
             )
+            if should_log_target:
+                self._last_target_log_time = now
+                self._last_target_key = target_key
+                print(
+                    f"target id={best.detection.track_id} label={best.detection.label} "
+                    f"score={best.total:.3f} cmd={joint_targets}"
+                )
+        else:
+            now = time.monotonic()
+            if now - self._last_hold_log_time >= 2.0:
+                print("[tracking] Requested target not visible; holding camera.")
+                self._last_hold_log_time = now
         if scene_summary != self._last_scene_summary:
             print(f"[scene] {scene_summary}")
             self._last_scene_summary = scene_summary
@@ -318,6 +445,7 @@ def main() -> None:
     parser.add_argument("--vlm-json-file", default=None, help="Optional file containing VLM JSON grounding output")
     parser.add_argument("--whisper-model", default="base", help="Whisper model name for audio-file transcription")
     parser.add_argument("--whisper-backend", default="auto", choices=("auto", "mlx-whisper", "whisper"), help="Speech backend preference")
+    parser.add_argument("--detector", default="color-proxy", choices=("color-proxy", "yolo"), help="Detection backend for Gazebo camera frames")
     parser.add_argument("--model-name", default="yolo11n.pt", help="Ultralytics tracking model")
     parser.add_argument("--conf-threshold", type=float, default=0.65)
     parser.add_argument("--rows", type=int, default=480)
@@ -326,12 +454,29 @@ def main() -> None:
     parser.add_argument("--stream-port", type=int, default=8000)
     parser.add_argument("--protocol", default="mjpeg", choices=("mjpeg", "websocket", "webrtc"))
     parser.add_argument("--no-stream", action="store_true")
+    parser.add_argument("--control-mode", default="pose", choices=("pose", "joint"), help="Use set_pose model yaw control or Gazebo joint-position control")
+    parser.add_argument("--world-name", default="room_427_tracking_test", help="Gazebo world name for pose control")
+    parser.add_argument("--model-pose-x", type=float, default=12.1, help="World X position for pose-control mode")
+    parser.add_argument("--model-pose-y", type=float, default=3.27, help="World Y position for pose-control mode")
+    parser.add_argument("--model-pose-z", type=float, default=2.35, help="World Z position for pose-control mode")
+    parser.add_argument("--model-base-yaw-deg", type=float, default=180.0, help="Zero-pan model yaw for pose-control mode")
+    parser.add_argument("--pose-timeout-ms", type=int, default=100, help="set_pose service timeout in milliseconds")
     parser.add_argument("--pan-min-deg", type=float, default=-180.0)
     parser.add_argument("--pan-max-deg", type=float, default=180.0)
     parser.add_argument("--tilt-min-deg", type=float, default=-90.0)
     parser.add_argument("--tilt-max-deg", type=float, default=90.0)
     parser.add_argument("--horizontal-fov-deg", type=float, default=60.0)
     parser.add_argument("--vertical-fov-deg", type=float, default=46.8)
+    parser.add_argument("--pan-deadband-px", type=float, default=28.0, help="Ignore small horizontal image error to reduce Gazebo demo jitter")
+    parser.add_argument("--tilt-deadband-px", type=float, default=40.0, help="Ignore small vertical image error")
+    parser.add_argument("--gain-scale", type=float, default=0.45, help="Camera tracker controller gain scale")
+    parser.add_argument("--max-step-deg", type=float, default=1.5, help="Maximum joint step per processed frame")
+    parser.add_argument("--control-rate-hz", type=float, default=4.0, help="Maximum visual-servo control updates per second")
+    parser.add_argument("--invert-pan", dest="invert_pan", action="store_true", default=False, help="Invert horizontal image error for a reversed pan convention")
+    parser.add_argument("--no-invert-pan", dest="invert_pan", action="store_false", help="Disable Gazebo pan direction inversion")
+    parser.add_argument("--initial-pan-deg", type=float, default=0.0, help="Initial pan command for the included pantilt model")
+    parser.add_argument("--initial-tilt-deg", type=float, default=25.0, help="Initial downward tilt command for the included pantilt model")
+    parser.add_argument("--lock-tilt", action="store_true", help="Hold initial tilt and only track horizontally")
     args = parser.parse_args()
 
     tracker = GazeboPanTiltTracker(
@@ -343,6 +488,7 @@ def main() -> None:
         vlm_json_file=args.vlm_json_file,
         whisper_model=args.whisper_model,
         whisper_backend=args.whisper_backend,
+        detector=args.detector,
         yolo_model_name=args.model_name,
         conf_threshold=args.conf_threshold,
         rows=args.rows,
@@ -351,12 +497,28 @@ def main() -> None:
         stream_port=args.stream_port,
         protocol=args.protocol,
         no_stream=args.no_stream,
+        control_mode=args.control_mode,
+        world_name=args.world_name,
+        model_pose_x=args.model_pose_x,
+        model_pose_y=args.model_pose_y,
+        model_pose_z=args.model_pose_z,
+        model_base_yaw_deg=args.model_base_yaw_deg,
+        pose_timeout_ms=args.pose_timeout_ms,
         pan_min_deg=args.pan_min_deg,
         pan_max_deg=args.pan_max_deg,
         tilt_min_deg=args.tilt_min_deg,
         tilt_max_deg=args.tilt_max_deg,
         horizontal_fov_deg=args.horizontal_fov_deg,
         vertical_fov_deg=args.vertical_fov_deg,
+        pan_deadband_px=args.pan_deadband_px,
+        tilt_deadband_px=args.tilt_deadband_px,
+        gain_scale=args.gain_scale,
+        max_step_deg=args.max_step_deg,
+        control_rate_hz=args.control_rate_hz,
+        invert_pan=args.invert_pan,
+        initial_pan_deg=args.initial_pan_deg,
+        initial_tilt_deg=args.initial_tilt_deg,
+        lock_tilt=args.lock_tilt,
     )
 
     try:

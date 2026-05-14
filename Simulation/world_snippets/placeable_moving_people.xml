@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<snippets>
+  <!-- Copy one actor block into a world before </world>. Edit every waypoint pose to place it.
+       Actors animate only when Gazebo is playing. Start with `gz sim -r ...` or press Play. -->
+
+  <actor name="moving_person_talking_1">
+    <skin>
+      <filename>model://actor_colored/meshes/talk_b_red.dae</filename>
+      <scale>1.0</scale>
+    </skin>
+    <animation name="talk_b">
+      <filename>model://actor_colored/meshes/talk_b_red.dae</filename>
+      <scale>0.055</scale>
+      <interpolate_x>true</interpolate_x>
+    </animation>
+    <script>
+      <loop>true</loop>
+      <auto_start>true</auto_start>
+      <trajectory id="0" type="talk_b">
+          <waypoint><time>0</time><pose>8.6 5.05 1.02 0 0 -0.45</pose></waypoint>
+          <waypoint><time>4</time><pose>8.6 5.05 1.02 0 0 -0.10</pose></waypoint>
+          <waypoint><time>8</time><pose>8.6 5.05 1.02 0 0 -0.60</pose></waypoint>
+          <waypoint><time>12</time><pose>8.6 5.05 1.02 0 0 -0.35</pose></waypoint>
+        </trajectory>
+    </script>
+  </actor>
+
+  <actor name="moving_person_talking_2">
+    <skin>
+      <filename>model://actor_colored/meshes/talk_b_green.dae</filename>
+      <scale>1.0</scale>
+    </skin>
+    <animation name="talk_b">
+      <filename>model://actor_colored/meshes/talk_b_green.dae</filename>
+      <scale>0.055</scale>
+      <interpolate_x>true</interpolate_x>
+    </animation>
+    <script>
+      <loop>true</loop>
+      <auto_start>true</auto_start>
+      <trajectory id="0" type="talk_b">
+          <waypoint><time>0</time><pose>10.25 3.25 1.02 0 0 -0.10</pose></waypoint>
+          <waypoint><time>5</time><pose>10.25 3.25 1.02 0 0 0.35</pose></waypoint>
+          <waypoint><time>10</time><pose>10.25 3.25 1.02 0 0 -0.25</pose></waypoint>
+          <waypoint><time>15</time><pose>10.25 3.25 1.02 0 0 0.05</pose></waypoint>
+        </trajectory>
+    </script>
+  </actor>
+
+  <actor name="moving_person_walking_1">
+    <skin>
+      <filename>model://actor_colored/meshes/walk_blue.dae</filename>
+      <scale>1.0</scale>
+    </skin>
+    <animation name="walk">
+      <filename>model://actor_colored/meshes/walk_blue.dae</filename>
+      <interpolate_x>true</interpolate_x>
+    </animation>
+    <script>
+      <loop>true</loop>
+      <auto_start>true</auto_start>
+      <trajectory id="0" type="walk" tension="0.3">
+        <waypoint><time>0</time><pose>8.15 1.45 1.02 0 0 0.00</pose></waypoint>
+        <waypoint><time>4</time><pose>10.00 1.45 1.02 0 0 1.57</pose></waypoint>
+        <waypoint><time>8</time><pose>10.00 2.25 1.02 0 0 3.14</pose></waypoint>
+        <waypoint><time>12</time><pose>8.15 2.25 1.02 0 0 -1.57</pose></waypoint>
+        <waypoint><time>16</time><pose>8.15 1.45 1.02 0 0 0.00</pose></waypoint>
+      </trajectory>
+    </script>
+  </actor>
+
+  <actor name="moving_person_talking_3">
+    <skin>
+      <filename>model://actor_colored/meshes/talk_b_yellow.dae</filename>
+      <scale>1.0</scale>
+    </skin>
+    <animation name="talk_b">
+      <filename>model://actor_colored/meshes/talk_b_yellow.dae</filename>
+      <scale>0.055</scale>
+      <interpolate_x>true</interpolate_x>
+    </animation>
+    <script>
+      <loop>true</loop>
+      <auto_start>true</auto_start>
+      <trajectory id="0" type="talk_b">
+        <waypoint><time>0</time><pose>15.65 4.88 1.02 0 0 -0.25</pose></waypoint>
+        <waypoint><time>4</time><pose>15.65 4.88 1.02 0 0 0.15</pose></waypoint>
+        <waypoint><time>8</time><pose>15.65 4.88 1.02 0 0 -0.45</pose></waypoint>
+        <waypoint><time>12</time><pose>15.65 4.88 1.02 0 0 -0.05</pose></waypoint>
+      </trajectory>
+    </script>
+  </actor>
+</snippets>

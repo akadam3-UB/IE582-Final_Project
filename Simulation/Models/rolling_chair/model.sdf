@@ -1,0 +1,266 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="rolling_chair">
+    <static>true</static>
+    <link name="seat">
+      <pose>0 0 0.49 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.48 0.46 0.075</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.48 0.46 0.075</size></box></geometry>
+          <material>
+            <ambient>0.08 0.19 0.32 1</ambient>
+            <diffuse>0.08 0.19 0.32 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="front_lip">
+      <pose>0 0.215 0.45 0 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.46 0.045 0.065</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.46 0.045 0.065</size></box></geometry>
+          <material>
+            <ambient>0.08 0.19 0.32 1</ambient>
+            <diffuse>0.08 0.19 0.32 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="backrest">
+      <pose>0 -0.235 0.78 -0.18 0 0</pose>
+      <collision name="collision">
+        <geometry><box><size>0.50 0.065 0.54</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.50 0.065 0.54</size></box></geometry>
+          <material>
+            <ambient>0.08 0.19 0.32 1</ambient>
+            <diffuse>0.08 0.19 0.32 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="gas_lift">
+      <pose>0 0 0.30 0 0 0</pose>
+      <collision name="collision">
+        <geometry><cylinder><radius>0.035</radius><length>0.34</length></cylinder></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.035</radius><length>0.34</length></cylinder></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="base_hub">
+      <pose>0 0 0.13 1.5708 0 0</pose>
+      <collision name="collision">
+        <geometry><cylinder><radius>0.085</radius><length>0.08</length></cylinder></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.085</radius><length>0.08</length></cylinder></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="base_spoke_1">
+      <pose>0.2100 0.0000 0.12 0 0 0.0000</pose>
+      <collision name="collision">
+        <geometry><box><size>0.36 0.045 0.035</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.36 0.045 0.035</size></box></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="caster_wheel_1">
+      <pose>0.4000 0.0000 0.055 1.5708 0 0.0000</pose>
+      <collision name="collision">
+        <geometry><cylinder><radius>0.042</radius><length>0.050</length></cylinder></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.042</radius><length>0.050</length></cylinder></geometry>
+          <material>
+            <ambient>0.035 0.035 0.035 1</ambient>
+            <diffuse>0.035 0.035 0.035 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="caster_fork_1">
+      <pose>0.4000 0.0000 0.102 0 0 0.0000</pose>
+      <collision name="collision">
+        <geometry><box><size>0.075 0.025 0.055</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.075 0.025 0.055</size></box></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="base_spoke_2">
+      <pose>0.0649 0.1997 0.12 0 0 1.2566</pose>
+      <collision name="collision">
+        <geometry><box><size>0.36 0.045 0.035</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.36 0.045 0.035</size></box></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="caster_wheel_2">
+      <pose>0.1236 0.3804 0.055 1.5708 0 1.2566</pose>
+      <collision name="collision">
+        <geometry><cylinder><radius>0.042</radius><length>0.050</length></cylinder></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.042</radius><length>0.050</length></cylinder></geometry>
+          <material>
+            <ambient>0.035 0.035 0.035 1</ambient>
+            <diffuse>0.035 0.035 0.035 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="caster_fork_2">
+      <pose>0.1236 0.3804 0.102 0 0 1.2566</pose>
+      <collision name="collision">
+        <geometry><box><size>0.075 0.025 0.055</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.075 0.025 0.055</size></box></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="base_spoke_3">
+      <pose>-0.1699 0.1234 0.12 0 0 2.5133</pose>
+      <collision name="collision">
+        <geometry><box><size>0.36 0.045 0.035</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.36 0.045 0.035</size></box></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="caster_wheel_3">
+      <pose>-0.3236 0.2351 0.055 1.5708 0 2.5133</pose>
+      <collision name="collision">
+        <geometry><cylinder><radius>0.042</radius><length>0.050</length></cylinder></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.042</radius><length>0.050</length></cylinder></geometry>
+          <material>
+            <ambient>0.035 0.035 0.035 1</ambient>
+            <diffuse>0.035 0.035 0.035 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="caster_fork_3">
+      <pose>-0.3236 0.2351 0.102 0 0 2.5133</pose>
+      <collision name="collision">
+        <geometry><box><size>0.075 0.025 0.055</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.075 0.025 0.055</size></box></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="base_spoke_4">
+      <pose>-0.1699 -0.1234 0.12 0 0 3.7699</pose>
+      <collision name="collision">
+        <geometry><box><size>0.36 0.045 0.035</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.36 0.045 0.035</size></box></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="caster_wheel_4">
+      <pose>-0.3236 -0.2351 0.055 1.5708 0 3.7699</pose>
+      <collision name="collision">
+        <geometry><cylinder><radius>0.042</radius><length>0.050</length></cylinder></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.042</radius><length>0.050</length></cylinder></geometry>
+          <material>
+            <ambient>0.035 0.035 0.035 1</ambient>
+            <diffuse>0.035 0.035 0.035 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="caster_fork_4">
+      <pose>-0.3236 -0.2351 0.102 0 0 3.7699</pose>
+      <collision name="collision">
+        <geometry><box><size>0.075 0.025 0.055</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.075 0.025 0.055</size></box></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="base_spoke_5">
+      <pose>0.0649 -0.1997 0.12 0 0 5.0265</pose>
+      <collision name="collision">
+        <geometry><box><size>0.36 0.045 0.035</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.36 0.045 0.035</size></box></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="caster_wheel_5">
+      <pose>0.1236 -0.3804 0.055 1.5708 0 5.0265</pose>
+      <collision name="collision">
+        <geometry><cylinder><radius>0.042</radius><length>0.050</length></cylinder></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><cylinder><radius>0.042</radius><length>0.050</length></cylinder></geometry>
+          <material>
+            <ambient>0.035 0.035 0.035 1</ambient>
+            <diffuse>0.035 0.035 0.035 1</diffuse>
+          </material>
+      </visual>
+    </link>
+    <link name="caster_fork_5">
+      <pose>0.1236 -0.3804 0.102 0 0 5.0265</pose>
+      <collision name="collision">
+        <geometry><box><size>0.075 0.025 0.055</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.075 0.025 0.055</size></box></geometry>
+          <material>
+            <ambient>0.42 0.42 0.4 1</ambient>
+            <diffuse>0.42 0.42 0.4 1</diffuse>
+          </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

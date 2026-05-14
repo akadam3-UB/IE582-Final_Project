@@ -33,6 +33,16 @@ class TargetSelectorTests(unittest.TestCase):
         intent = CommandIntent(action="track", target_label="cone", target_color="red")
         ranked = rank_targets(detections, intent, frame_shape=(480, 640))
         self.assertEqual(ranked[0].detection.track_id, 3)
+        self.assertEqual(len(ranked), 1)
+
+    def test_color_request_returns_no_target_when_color_is_missing(self) -> None:
+        detections = [
+            Detection("person", 0.85, BoundingBox(260, 180, 340, 340), track_id=3, attributes={"color": "yellow"}),
+            Detection("person", 0.85, BoundingBox(250, 180, 330, 340), track_id=4, attributes={"color": "blue"}),
+        ]
+        intent = CommandIntent(action="track", target_label="person", target_color="red")
+        best = select_target(detections, intent, frame_shape=(480, 640))
+        self.assertIsNone(best)
 
     def test_track_id_request_is_strong_preference(self) -> None:
         detections = [

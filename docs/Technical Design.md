@@ -22,7 +22,7 @@ optional speech/audio or VLM JSON
   -> runtime_inputs.py
   -> command_parser.py
 
-detections or Gazebo poses
+detections from camera pixels
   -> target_selector.py
   -> ranked TargetScore list
 
@@ -35,27 +35,31 @@ best target + current joint state
 
 ## Main Runtime Paths
 
-### Stable Gazebo Demo
+### Primary Gazebo Camera Demo
 
 Use this first:
 
 ```bash
-./scripts/run_gazebo_room_427_tracking_world_gui.sh
-./scripts/run_gazebo_room_427_pose_tracker.sh
+./scripts/run_gazebo_room_427_tracking_world.sh
+gz sim -g
+./scripts/run_gazebo_room_427_camera_view.sh
+echo "track the red person" > runtime_command.txt
+./scripts/run_gazebo_room_427_camera_tracker.sh
 ```
 
-This path reads Gazebo model poses for the colored local people. It is repeatable and avoids rendering issues during project development.
+This path uses the Gazebo camera image topic from the original `model://pantilt` camera mounted near the ceiling at Room 427 center. The default detector is `color-proxy`, which thresholds the staged red, green, blue, and yellow people from real rendered pixels and passes those detections through the normal selector and controller.
 
-### Advanced Paths
+### Debug And Advanced Paths
 
-Keep these behind the stable demo:
+Keep these behind the camera demo:
 
 - `mic_command_listener.py` can write spoken commands into `runtime_command.txt`.
-- `pan_tilt_gazebo_tracker.py` uses the Gazebo camera image topic and Ultralytics detections.
+- `pan_tilt_gazebo_tracker.py --detector yolo` uses the Gazebo camera image topic and Ultralytics detections.
+- `pan_tilt_gazebo_pose_tracker.py` reads Gazebo model poses for deterministic debugging. It is not the main perception demo because it bypasses the camera image.
 - `pan_tilt_socket_client.py` adapts the same parser, selector, and controller to the class host socket protocol.
 - `vision.py` converts detector outputs into the common `Detection` model and estimates simple color attributes from image crops.
 
-These paths preserve the original speech/vision project complexity, but they should not block the Room 427 pose demo.
+These paths preserve the original speech/vision project complexity, but they should not block the Room 427 camera demo.
 
 ## Important Design Choices
 

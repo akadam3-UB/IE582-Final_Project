@@ -181,6 +181,22 @@ def _command_match_adjustment(
     return adjustment, detail
 
 
+def _matches_required_intent(detection: Detection, intent: CommandIntent) -> bool:
+    """Return whether a detection satisfies explicit command requirements."""
+
+    if intent.target_track_id is not None and detection.track_id != intent.target_track_id:
+        return False
+
+    if intent.target_label and detection.label.lower() != intent.target_label.lower():
+        return False
+
+    if intent.target_color:
+        observed_color = detection.attributes.get("color", "").strip().lower()
+        return observed_color == intent.target_color.lower()
+
+    return True
+
+
 def rank_targets(
     detections: Iterable[Detection],
     intent: CommandIntent,
@@ -195,6 +211,8 @@ def rank_targets(
 
     for detection in detections:
         if detection.confidence < cfg.min_confidence:
+            continue
+        if not _matches_required_intent(detection, intent):
             continue
 
         center_score = _center_score(detection, frame_shape)

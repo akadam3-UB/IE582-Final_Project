@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 WORLD_PATH="${REPO_ROOT}/Simulation/worlds/room_427_tracking_test.world"
-MODELS_PATH="${REPO_ROOT}/Simulation/Models"
+MODELS_PATH="${REPO_ROOT}/Simulation/models"
 GUI_CONFIG_PATH="${REPO_ROOT}/Simulation/gui/room_427_tracking_gui.config"
 DEFAULT_RENDER_BACKEND="opengl"
 if [[ "$(uname -s)" == "Darwin" && "$(uname -m)" == "arm64" ]]; then

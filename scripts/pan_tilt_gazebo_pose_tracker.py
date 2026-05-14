@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Simulation-first pan/tilt tracker using Gazebo ground-truth poses.
+"""Debug pan/tilt tracker using Gazebo ground-truth poses.
 
-This is the stable Room 427 demo path. It exercises command parsing, target
-selection, target lock, and pan/tilt control without depending on camera
-rendering quality.
+This fallback exercises command parsing, target selection, target lock, and
+pan/tilt control without depending on camera rendering quality. The primary
+Room 427 demo uses camera pixels through pan_tilt_gazebo_tracker.py.
 """
 
 from __future__ import annotations
@@ -103,6 +103,9 @@ class GazeboPosePanTiltTracker:
         vertical_fov_deg: float,
         tracked_prefixes: Iterable[str],
         base_pose_xyz: Tuple[float, float, float],
+        base_yaw_deg: float,
+        initial_pan_deg: float,
+        initial_tilt_deg: float,
         tilt_joint_offset_m: float,
         sensor_forward_offset_m: float,
         human_height_m: float,
@@ -118,6 +121,7 @@ class GazeboPosePanTiltTracker:
         self.horizontal_fov_deg = float(horizontal_fov_deg)
         self.vertical_fov_deg = float(vertical_fov_deg)
         self.base_pose_xyz = tuple(float(v) for v in base_pose_xyz)
+        self.base_yaw_deg = float(base_yaw_deg)
         self.tilt_joint_offset_m = float(tilt_joint_offset_m)
         self.sensor_forward_offset_m = float(sensor_forward_offset_m)
         self.human_height_m = float(human_height_m)
@@ -153,12 +157,12 @@ class GazeboPosePanTiltTracker:
 
         self.joint_state = {
             "pan_joint": {
-                "angle_deg": 0.0,
+                "angle_deg": float(initial_pan_deg),
                 "min_angle": pan_min_deg,
                 "max_angle": pan_max_deg,
             },
             "tilt_joint": {
-                "angle_deg": 0.0,
+                "angle_deg": float(initial_tilt_deg),
                 "min_angle": tilt_min_deg,
                 "max_angle": tilt_max_deg,
             },
@@ -175,9 +179,12 @@ class GazeboPosePanTiltTracker:
 
         self.node.subscribe(pose_v_pb2.Pose_V, self.pose_topic, self._on_pose_message)
         self._install_signal_handlers()
+        self._publish_joint_command("pan_joint", float(initial_pan_deg))
+        self._publish_joint_command("tilt_joint", float(initial_tilt_deg))
 
         print(f"Subscribed to Gazebo pose topic: {self.pose_topic}")
         print(f"Publishing pan/tilt commands for model: {self.gazebo_model_name}")
+        print("Debug mode: using Gazebo ground-truth poses, not camera pixels.")
 
     def _install_signal_handlers(self) -> None:
         def handle_signal(signum, frame):
@@ -230,7 +237,7 @@ class GazeboPosePanTiltTracker:
         self.joint_state[joint_name]["angle_deg"] = angle_deg
 
     def _camera_pose(self) -> Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]:
-        pan_rad = math.radians(float(self.joint_state["pan_joint"]["angle_deg"]))
+        pan_rad = math.radians(self.base_yaw_deg + float(self.joint_state["pan_joint"]["angle_deg"]))
         tilt_down_rad = math.radians(float(self.joint_state["tilt_joint"]["angle_deg"]))
 
         cos_yaw = math.cos(pan_rad)
@@ -409,6 +416,9 @@ def main() -> None:
     parser.add_argument("--base-x", type=float, default=0.0)
     parser.add_argument("--base-y", type=float, default=0.0)
     parser.add_argument("--base-z", type=float, default=1.45)
+    parser.add_argument("--base-yaw-deg", type=float, default=0.0)
+    parser.add_argument("--initial-pan-deg", type=float, default=0.0)
+    parser.add_argument("--initial-tilt-deg", type=float, default=0.0)
     parser.add_argument("--tilt-joint-offset-m", type=float, default=0.22)
     parser.add_argument("--sensor-forward-offset-m", type=float, default=0.18)
     parser.add_argument("--human-height-m", type=float, default=1.7)
@@ -434,6 +444,9 @@ def main() -> None:
         vertical_fov_deg=args.vertical_fov_deg,
         tracked_prefixes=args.tracked_prefix,
         base_pose_xyz=(args.base_x, args.base_y, args.base_z),
+        base_yaw_deg=args.base_yaw_deg,
+        initial_pan_deg=args.initial_pan_deg,
+        initial_tilt_deg=args.initial_tilt_deg,
         tilt_joint_offset_m=args.tilt_joint_offset_m,
         sensor_forward_offset_m=args.sensor_forward_offset_m,
         human_height_m=args.human_height_m,

@@ -12,7 +12,12 @@ exec .venv/bin/python scripts/pan_tilt_gazebo_pose_tracker.py \
   --pose-topic "/world/room_427_tracking_test/pose/info" \
   --gazebo-model-name pantilt \
   --command-file runtime_command.txt \
-  --base-x 1.2 \
+  --base-x 12.1 \
   --base-y 3.27 \
-  --base-z 1.45 \
+  --base-z 2.35 \
+  --base-yaw-deg 180 \
+  --initial-pan-deg 0 \
+  --initial-tilt-deg 25 \
+  --tilt-joint-offset-m 0.1425 \
+  --sensor-forward-offset-m 0.072 \
   "$@"

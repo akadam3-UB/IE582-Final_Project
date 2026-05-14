@@ -15,6 +15,7 @@ if str(SRC_PATH) not in sys.path:
 from ie582_final_project.models import BoundingBox, Detection
 from ie582_final_project.vision import (
     build_scene_summary,
+    color_proxy_detections,
     estimate_detection_attributes,
     top_labels,
     ultralytics_results_to_detections,
@@ -64,6 +65,30 @@ class VisionUtilsTests(unittest.TestCase):
         self.assertEqual(len(detections), 1)
         self.assertIsNone(detections[0].track_id)
         self.assertEqual(detections[0].label, "person")
+
+    def test_color_proxy_detection_finds_staged_people(self) -> None:
+        frame = np.zeros((120, 180, 3), dtype=np.uint8)
+        frame[20:86, 14:46] = [0, 0, 220]
+        frame[28:92, 66:102] = [25, 180, 25]
+        frame[22:84, 126:158] = [210, 45, 25]
+        frame[68:112, 92:122] = [35, 210, 230]
+
+        detections = color_proxy_detections(frame, min_area_px=50)
+        by_color = {detection.attributes["color"]: detection for detection in detections}
+
+        self.assertEqual(set(by_color), {"red", "green", "blue", "yellow"})
+        self.assertEqual(by_color["red"].track_id, 1)
+        self.assertEqual(by_color["green"].track_id, 2)
+        self.assertEqual(by_color["blue"].track_id, 3)
+        self.assertEqual(by_color["yellow"].track_id, 4)
+        self.assertLess(by_color["red"].bbox.center_x, by_color["green"].bbox.center_x)
+        self.assertGreater(by_color["blue"].bbox.center_x, by_color["green"].bbox.center_x)
+
+    def test_color_proxy_detection_ignores_tiny_noise(self) -> None:
+        frame = np.zeros((80, 100, 3), dtype=np.uint8)
+        frame[2:5, 2:5] = [0, 0, 255]
+
+        self.assertEqual(color_proxy_detections(frame, min_area_px=50), [])
 
     def test_top_labels_is_unique_and_ordered(self) -> None:
         detections = [

@@ -21,34 +21,31 @@
         base_link  (base cube + pan servo housing)
             └── pan_joint  (revolute, Z axis)
         pan_link   (washers + bracket + tilt servo housing)
-            └── tilt_joint  (revolute, Y axis)
+            └── tilt_joint  (revolute, Y axis, limited to a safe downward range)
         tilt_link  (U-bracket + camera)
 
-      Tilt sign convention: positive tilt rotates camera DOWN (-Z direction);
-        negative tilt rotates camera UP (+Z direction). Adjust p_gain signs in
-        control code if needed.
+      The tilt joint is intentionally range-limited and heavily damped so it can
+      move for the demo without driving the camera into unstable poses.
     -->
 
     <pose>0 0 0 0 0 0</pose>
     <static>false</static>
 
-    <!-- Fix the base to the world so the model doesn't fall under gravity.
-         base_link is anchored; pan_joint and tilt_joint still rotate freely. -->
-    <joint name="world_fixed" type="fixed">
-      <parent>world</parent>
-      <child>base_link</child>
-    </joint>
+    <!-- This model is ceiling-mounted in the world. The base link is given a
+         large inertia below so the pan joint can move the camera without the
+         Gazebo world-fixed joint freezing the whole kinematic tree. -->
 
     <!-- ================================================================
          BASE LINK — base cube + pan servo housing (both fixed to world)
          ================================================================ -->
     <link name="base_link">
+      <gravity>false</gravity>
       <inertial>
-        <mass>0.6</mass>
+        <mass>250.0</mass>
         <inertia>
-          <ixx>0.000582</ixx><ixy>0</ixy><ixz>0</ixz>
-          <iyy>0.000582</iyy><iyz>0</iyz>
-          <izz>0.000833</izz>
+          <ixx>12.0</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>12.0</iyy><iyz>0</iyz>
+          <izz>12.0</izz>
         </inertia>
       </inertial>
 
@@ -106,11 +103,12 @@
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
-          <lower>-3.14159</lower>
-          <upper>3.14159</upper>
+          <lower>-0.87266</lower>
+          <upper>0.87266</upper>
         </limit>
         <dynamics>
-          <damping>0.05</damping>
+          <damping>0.8</damping>
+          <friction>0.15</friction>
         </dynamics>
       </axis>
     </joint>
@@ -122,6 +120,7 @@
          ================================================================ -->
     <link name="pan_link">
       <pose relative_to="pan_joint">0 0 0 0 0 0</pose>
+      <gravity>false</gravity>
       <inertial>
         <mass>0.07</mass>
         <inertia>
@@ -216,12 +215,12 @@
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <!-- -90° = camera faces up; +90° = camera faces down -->
-          <lower>-1.5708</lower>
-          <upper>1.5708</upper>
+          <lower>0</lower>
+          <upper>0.785398</upper>
         </limit>
         <dynamics>
-          <damping>0.03</damping>
+          <damping>2.5</damping>
+          <friction>0.25</friction>
         </dynamics>
       </axis>
     </joint>
@@ -233,12 +232,13 @@
          ================================================================ -->
     <link name="tilt_link">
       <pose relative_to="tilt_joint">0 0 0 0 0 0</pose>
+      <gravity>false</gravity>
       <inertial>
-        <mass>0.03</mass>
+        <mass>0.20</mass>
         <inertia>
-          <ixx>0.000005</ixx><ixy>0</ixy><ixz>0</ixz>
-          <iyy>0.000008</iyy><iyz>0</iyz>
-          <izz>0.000008</izz>
+          <ixx>0.00012</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.00012</iyy><iyz>0</iyz>
+          <izz>0.00012</izz>
         </inertia>
       </inertial>
 
@@ -369,18 +369,24 @@
          Topics (Gazebo Harmonic):
            /model/pantilt/joint/pan_joint/cmd_pos   (gz.msgs.Double)
            /model/pantilt/joint/tilt_joint/cmd_pos  (gz.msgs.Double)
-         Tilt convention: negative value = camera up, positive = camera down
+         Tilt uses conservative gains and limits for numerical stability.
          ================================================================ -->
     <plugin filename="gz-sim-joint-position-controller-system"
             name="gz::sim::systems::JointPositionController">
       <joint_name>pan_joint</joint_name>
-      <p_gain>15</p_gain>
+      <p_gain>6</p_gain>
+      <d_gain>0.8</d_gain>
+      <cmd_min>-8</cmd_min>
+      <cmd_max>8</cmd_max>
     </plugin>
 
     <plugin filename="gz-sim-joint-position-controller-system"
             name="gz::sim::systems::JointPositionController">
       <joint_name>tilt_joint</joint_name>
-      <p_gain>15</p_gain>
+      <p_gain>2.0</p_gain>
+      <d_gain>0.4</d_gain>
+      <cmd_min>0</cmd_min>
+      <cmd_max>0.785398</cmd_max>
     </plugin>
 
   </model>

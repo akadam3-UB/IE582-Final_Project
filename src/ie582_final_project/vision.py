@@ -9,6 +9,14 @@ import numpy as np
 from .models import BoundingBox, Detection
 
 
+_COLOR_PROXY_TRACK_IDS = {
+    "red": 1,
+    "green": 2,
+    "blue": 3,
+    "yellow": 4,
+}
+
+
 def _clip_bbox_to_frame(bbox: BoundingBox, frame_shape: Tuple[int, int]) -> Optional[Tuple[int, int, int, int]]:
     frame_h, frame_w = frame_shape[:2]
     x1 = max(0, min(frame_w, int(round(bbox.x1))))
@@ -163,6 +171,115 @@ def ultralytics_results_to_detections(results, frame=None) -> List[Detection]:
                     attributes=estimate_detection_attributes(frame, bbox),
                 )
             )
+    return detections
+
+
+def _mask_components(mask: np.ndarray, min_area_px: int) -> List[Tuple[int, int, int, int, int]]:
+    """Return connected mask components as ``(x1, y1, x2, y2, area)``."""
+
+    if mask.ndim != 2 or not np.any(mask):
+        return []
+
+    height, width = mask.shape
+    visited = np.zeros(mask.shape, dtype=bool)
+    ys, xs = np.nonzero(mask)
+    components: List[Tuple[int, int, int, int, int]] = []
+
+    for start_y, start_x in zip(ys.tolist(), xs.tolist()):
+        if visited[start_y, start_x] or not mask[start_y, start_x]:
+            continue
+
+        stack = [(start_x, start_y)]
+        visited[start_y, start_x] = True
+        min_x = max_x = start_x
+        min_y = max_y = start_y
+        area = 0
+
+        while stack:
+            x, y = stack.pop()
+            area += 1
+            min_x = min(min_x, x)
+            max_x = max(max_x, x)
+            min_y = min(min_y, y)
+            max_y = max(max_y, y)
+
+            for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if nx < 0 or nx >= width or ny < 0 or ny >= height:
+                    continue
+                if visited[ny, nx] or not mask[ny, nx]:
+                    continue
+                visited[ny, nx] = True
+                stack.append((nx, ny))
+
+        if area >= min_area_px:
+            components.append((min_x, min_y, max_x + 1, max_y + 1, area))
+
+    components.sort(key=lambda component: component[4], reverse=True)
+    return components
+
+
+def _person_like_component(components: Sequence[Tuple[int, int, int, int, int]]) -> Optional[Tuple[int, int, int, int, int]]:
+    for component in components:
+        x1, y1, x2, y2, _ = component
+        width = max(1, x2 - x1)
+        height = max(1, y2 - y1)
+        aspect = width / height
+        if width >= 6 and height >= 10 and 0.18 <= aspect <= 3.5:
+            return component
+    return components[0] if components else None
+
+
+def color_proxy_detections(frame: np.ndarray, min_area_px: int = 80) -> List[Detection]:
+    """Detect the staged colored Room 427 people from real camera pixels.
+
+    The tracking-test world uses one proxy person per shirt color. This detector
+    intentionally stays simple and deterministic: it thresholds the rendered BGR
+    frame, builds one stable detection per color, and hands those detections to
+    the normal command parser / target selector / pan-tilt controller pipeline.
+    """
+
+    if frame is None or not isinstance(frame, np.ndarray):
+        return []
+    if frame.ndim != 3 or frame.shape[2] < 3:
+        return []
+
+    bgr = frame[..., :3].astype(np.float32)
+    blue = bgr[..., 0]
+    green = bgr[..., 1]
+    red = bgr[..., 2]
+
+    masks = {
+        "red": (red > 85) & (red > green * 1.35) & (red > blue * 1.35),
+        "green": (green > 75) & (green > red * 1.25) & (green > blue * 1.2),
+        "blue": (blue > 75) & (blue > red * 1.25) & (blue > green * 1.12),
+        "yellow": (
+            (red > 95)
+            & (green > 90)
+            & (blue < 140)
+            & (red > blue * 1.35)
+            & (green > blue * 1.25)
+            & (np.abs(red - green) < 95)
+        ),
+    }
+
+    detections: List[Detection] = []
+    for color, mask in masks.items():
+        component = _person_like_component(_mask_components(mask, min_area_px=min_area_px))
+        if component is None:
+            continue
+
+        x1, y1, x2, y2, area = component
+        detections.append(
+            Detection(
+                label="person",
+                confidence=min(0.99, 0.75 + area / max(float(frame.shape[0] * frame.shape[1]), 1.0)),
+                bbox=BoundingBox(x1=float(x1), y1=float(y1), x2=float(x2), y2=float(y2)),
+                track_id=_COLOR_PROXY_TRACK_IDS[color],
+                attributes={"color": color, "source": "color_proxy"},
+            )
+        )
+
+    detections.sort(key=lambda detection: detection.track_id or 0)
     return detections
 
 
