@@ -103,13 +103,15 @@ The default demo uses the lightweight `color-proxy` detector, so it does not req
 
 Use three terminals at most. You do not need four terminals.
 
-**Terminal 1: launch the final Room 427 world**
+**Terminal 1: launch the final Room 427 world server**
 
 ```bash
 cd /path/to/IE582-Final_Project
 source ".venv/bin/activate"
 ./scripts/run_gazebo_room_427_world.sh
 ```
+
+This terminal must stay running. It starts the Gazebo server, camera sensor, and render engine. Open the camera window only after this server is running.
 
 On Apple Silicon, the script automatically prefers Metal. If you still see Ogre/render-engine errors, force Metal explicitly:
 
@@ -161,18 +163,18 @@ camera: /ackermann/front_camera/image
 drive:  /cmd_vel
 ```
 
-**Terminal 1: launch the fourth-floor world**
+**Terminal 1: launch the fourth-floor world server**
 
 ```bash
 cd /path/to/IE582-Final_Project/Simulation
 export GZ_SIM_RESOURCE_PATH="$PWD/models"
-gz sim -r \
+gz sim -s -r \
+  --headless-rendering \
   --render-engine-server-api-backend metal \
-  --render-engine-gui-api-backend metal \
   worlds/fourth_floor.world
 ```
 
-If Gazebo opens but the camera image is easier to view in a separate panel, use Terminal 2.
+Keep this terminal running. It starts the camera/rendering server. Use Terminal 2 for the camera image.
 
 **Terminal 2: open the car camera view**
 
@@ -351,7 +353,13 @@ gz sim worlds/room_427.world
 
 The script does this setup automatically.
 
-**Gazebo crashes with `Failed to load render-engine`**
+**Gazebo says `Render-engine must be loaded first` or crashes with `Failed to load render-engine`**
+
+Start the world server first, then open the GUI camera view. Do not run `gz sim -g` or the tracker before the server is up:
+
+```bash
+./scripts/run_gazebo_room_427_world.sh
+```
 
 On Apple Silicon, prefer:
 

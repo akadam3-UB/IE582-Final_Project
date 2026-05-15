@@ -16,7 +16,7 @@ export GZ_IP="${GZ_IP:-127.0.0.1}"
 export GZ_RELAY="${GZ_RELAY:-127.0.0.1}"
 
 
-echo "Launching Room 427 world:"
+echo "Launching Room 427 world server:"
 echo "  ${WORLD_PATH}"
 echo "Using Gazebo model path:"
 echo "  ${MODELS_PATH}"
@@ -27,11 +27,12 @@ echo "  ${GZ_RELAY}"
 echo "Using render backend:"
 echo "  ${RENDER_BACKEND}"
 echo
-echo "If Apple Silicon rendering is unstable, retry with:"
-echo "  GZ_RENDER_BACKEND=metal ./scripts/run_gazebo_room_427_world.sh"
+echo "This starts the camera/rendering server. Open the camera GUI in a second terminal."
 
 exec gz sim \
+  -s \
   -r \
-  --render-engine-api-backend "${RENDER_BACKEND}" \
+  --headless-rendering \
+  --render-engine-server-api-backend "${RENDER_BACKEND}" \
   "${WORLD_PATH}" \
   "$@"
