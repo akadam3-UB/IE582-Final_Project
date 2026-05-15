@@ -8,7 +8,7 @@ The final demo world is `Simulation/worlds/room_427.world`.
 
 ![Top-down Room 427 layout](docs/images/room_427_layout.svg)
 
-[YOUTUBE: Command-Guided Camera Tracking and Mobile Camera Car](https://youtu.be/TOwl1SmfSlQ)
+[YOUTUBE: Command-Guided Camera Tracking and Mobile Camera Car](https://youtu.be/9oMIB-LSuj4)
 
 ## What This Demonstrates
 
