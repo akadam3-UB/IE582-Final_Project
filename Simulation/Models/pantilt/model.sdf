@@ -216,7 +216,7 @@
         <xyz>0 1 0</xyz>
         <limit>
           <lower>0</lower>
-          <upper>0.785398</upper>
+          <upper>1.570796</upper>
         </limit>
         <dynamics>
           <damping>2.5</damping>
@@ -386,7 +386,7 @@
       <p_gain>2.0</p_gain>
       <d_gain>0.4</d_gain>
       <cmd_min>0</cmd_min>
-      <cmd_max>0.785398</cmd_max>
+      <cmd_max>1.570796</cmd_max>
     </plugin>
 
   </model>

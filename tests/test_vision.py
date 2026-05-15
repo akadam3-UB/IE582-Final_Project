@@ -90,6 +90,16 @@ class VisionUtilsTests(unittest.TestCase):
 
         self.assertEqual(color_proxy_detections(frame, min_area_px=50), [])
 
+    def test_color_proxy_detection_prefers_blue_shirt_over_teal_chair(self) -> None:
+        frame = np.zeros((120, 180, 3), dtype=np.uint8)
+        frame[18:88, 24:54] = [220, 35, 20]
+        frame[42:112, 92:162] = [120, 105, 30]
+
+        detections = color_proxy_detections(frame, min_area_px=50)
+        blue = next(detection for detection in detections if detection.attributes["color"] == "blue")
+
+        self.assertLess(blue.bbox.center_x, 70)
+
     def test_top_labels_is_unique_and_ordered(self) -> None:
         detections = [
             Detection("person", 0.9, BoundingBox(0, 0, 10, 10)),

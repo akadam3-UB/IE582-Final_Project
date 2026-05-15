@@ -229,6 +229,38 @@ def _person_like_component(components: Sequence[Tuple[int, int, int, int, int]])
     return components[0] if components else None
 
 
+def _shirt_center_bbox(mask: np.ndarray, component: Tuple[int, int, int, int, int]) -> BoundingBox:
+    """Return a small target box around the shirt/torso center of a colored person."""
+
+    x1, y1, x2, y2, _ = component
+    width = max(1, x2 - x1)
+    height = max(1, y2 - y1)
+
+    # The staged actors are detected by shirt color, but their full colored mask
+    # can include arms/legs. Aim at the denser upper torso so visual servoing
+    # centers the shirt instead of the whole silhouette.
+    torso_y1 = y1 + int(round(height * 0.18))
+    torso_y2 = y1 + int(round(height * 0.58))
+    torso = mask[max(y1, torso_y1) : min(y2, torso_y2), x1:x2]
+    ys, xs = np.nonzero(torso)
+
+    if len(xs) >= 8:
+        center_x = x1 + float(np.median(xs))
+        center_y = max(y1, torso_y1) + float(np.median(ys))
+    else:
+        center_x = x1 + width / 2.0
+        center_y = y1 + height * 0.38
+
+    target_w = max(8.0, width * 0.45)
+    target_h = max(10.0, height * 0.28)
+    return BoundingBox(
+        x1=center_x - target_w / 2.0,
+        y1=center_y - target_h / 2.0,
+        x2=center_x + target_w / 2.0,
+        y2=center_y + target_h / 2.0,
+    )
+
+
 def color_proxy_detections(frame: np.ndarray, min_area_px: int = 80) -> List[Detection]:
     """Detect the staged colored Room 427 people from real camera pixels.
 
@@ -251,7 +283,7 @@ def color_proxy_detections(frame: np.ndarray, min_area_px: int = 80) -> List[Det
     masks = {
         "red": (red > 85) & (red > green * 1.35) & (red > blue * 1.35),
         "green": (green > 75) & (green > red * 1.25) & (green > blue * 1.2),
-        "blue": (blue > 75) & (blue > red * 1.25) & (blue > green * 1.12),
+        "blue": (blue > 75) & (blue > red * 1.25) & (blue > green * 1.35),
         "yellow": (
             (red > 95)
             & (green > 90)
@@ -273,9 +305,9 @@ def color_proxy_detections(frame: np.ndarray, min_area_px: int = 80) -> List[Det
             Detection(
                 label="person",
                 confidence=min(0.99, 0.75 + area / max(float(frame.shape[0] * frame.shape[1]), 1.0)),
-                bbox=BoundingBox(x1=float(x1), y1=float(y1), x2=float(x2), y2=float(y2)),
+                bbox=_shirt_center_bbox(mask, component),
                 track_id=_COLOR_PROXY_TRACK_IDS[color],
-                attributes={"color": color, "source": "color_proxy"},
+                attributes={"color": color, "source": "color_proxy", "target": "shirt_center"},
             )
         )
 

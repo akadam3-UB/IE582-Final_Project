@@ -29,10 +29,11 @@ exec "${PYTHON_BIN}" scripts/pan_tilt_gazebo_tracker.py \
   --pan-min-deg -45 \
   --pan-max-deg 45 \
   --tilt-min-deg 0 \
-  --tilt-max-deg 30 \
+  --tilt-max-deg 90 \
   --pan-deadband-px 40 \
   --tilt-deadband-px 80 \
-  --tilt-setpoint-y-fraction 0.75 \
+  --tilt-setpoint-y-fraction 0.50 \
+  --vertical-fov-deg -46.8 \
   --gain-scale 0.20 \
   --max-step-deg 0.75 \
   --control-rate-hz 3 \

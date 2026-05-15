@@ -1,4 +1,4 @@
-# IE582 Final Project: Command-Guided Camera Tracking and Mobile Camera Car
+# IE582 Project: Command-Guided Camera Tracking and Mobile Camera Car
 
 This project is a Gazebo simulation demo for interactive robot perception in a classroom and hallway environment. The main demo uses a pan/tilt camera mounted near the Room 427 ceiling. It subscribes to its own rendered camera images, detects visible colored people, parses a natural-language command, selects the best matching target, and sends bounded pan/tilt commands so the camera keeps the requested target in view.
 
@@ -31,7 +31,7 @@ The main goal is not just placing a camera in a world. The project demonstrates 
 - Front teaching section with 3 rows of 2 class tables and rolling chairs.
 - Moving colored mesh actors used as trackable people.
 - Ceiling-mounted pan/tilt camera at approximately `x=11.25`, `y=3.25`, `z=2.35`.
-- The model supports pan from `-45` to `45` degrees and tilt from `0` to `45` degrees. The live demo tracker uses a more conservative `0` to `30` degree tilt range so the ceiling camera does not drive into a wall or floor-corner view.
+- The model supports pan from `-45` to `45` degrees and tilt from `0` to `90` degrees so the ceiling camera can look farther down at lower actors.
 
 The older `Simulation/worlds/room_427_tracking_test.world` remains as a diagnostic world, but the final demo should use `room_427.world`.
 
@@ -263,9 +263,7 @@ The parser also recognizes classroom synonyms such as `student`, `teacher`, `pro
 
 ## How The Tracking Works
 
-The tracker does use camera images. It does not simply teleport or choose actors from known world positions.
-
-The default visual detector thresholds the rendered camera image for red, green, blue, and yellow regions. Each color becomes one stable `person` detection:
+The tracker use camera images. The default visual detector thresholds the rendered camera image for red, green, blue, and yellow regions. Each color becomes one stable `person` detection:
 
 ```text
 red -> track id 1
@@ -289,18 +287,6 @@ The pan/tilt controller uses image error:
 - deadbands ignore tiny errors
 - max step size prevents sudden jumps
 - joint limits prevent physically invalid camera poses
-
-## Pan/Tilt Stability Fix
-
-The camera model uses a real two-degree-of-freedom pan/tilt setup:
-
-- `pan_joint` rotates around the vertical axis.
-- `tilt_joint` rotates around the horizontal axis.
-- `tilt_joint` is a bounded revolute joint, not a free or unstable joint.
-- Joint damping, friction, and conservative controller gains reduce Gazebo physics instability.
-- The demo tracker keeps the target slightly lower than image center, which is more natural for a ceiling-mounted camera and avoids repeatedly tilting into the corner of the room.
-
-This is why the demo now supports both pan and tilt while avoiding the previous non-finite tilt warnings.
 
 ## Expected Terminal Output
 
