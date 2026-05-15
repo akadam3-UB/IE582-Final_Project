@@ -8,6 +8,8 @@ The final demo world is `Simulation/worlds/room_427.world`.
 
 ![Top-down Room 427 layout](docs/images/room_427_layout.svg)
 
+[YOUTUBE: Command-Guided Camera Tracking and Mobile Camera Car](https://youtu.be/TOwl1SmfSlQ)
+
 ## What This Demonstrates
 
 The main goal is not just placing a camera in a world. The project demonstrates a complete command-to-action loop:
@@ -55,6 +57,10 @@ scripts/
   run_gazebo_room_427_world.sh      # launch final Room 427 world
   run_gazebo_room_427_camera_view.sh
   run_gazebo_room_427_camera_tracker.sh
+  run_gazebo_fourth_floor_world.sh
+  run_gazebo_fourth_floor_global_view.sh
+  run_gazebo_fourth_floor_camera_view.sh
+  run_gazebo_fourth_floor_hallway_driver.sh
   pan_tilt_gazebo_tracker.py
   capture_gazebo_camera_frame.py    # optional README/report screenshot capture
 src/ie582_final_project/
@@ -166,65 +172,49 @@ drive:  /cmd_vel
 **Terminal 1: launch the fourth-floor world server**
 
 ```bash
-cd /path/to/IE582-Final_Project/Simulation
-export GZ_SIM_RESOURCE_PATH="$PWD/models"
-gz sim -s -r \
-  --headless-rendering \
-  --render-engine-server-api-backend metal \
-  worlds/fourth_floor.world
+cd /path/to/IE582-Final_Project
+source .venv/bin/activate
+./scripts/run_gazebo_fourth_floor_world.sh
 ```
 
-Keep this terminal running. It starts the camera/rendering server. Use Terminal 2 for the camera image.
+Keep this terminal running. It starts the camera/rendering server. Use the same `GZ_IP` / `GZ_RELAY` settings in every terminal through the project scripts.
 
-**Terminal 2: open the car camera view**
+**Terminal 2: open the interactive global world view and car camera panel**
 
 ```bash
-cd /path/to/IE582-Final_Project/Simulation
-sed 's#/world/room_427/model/pantilt/link/tilt_link/sensor/camera/image#/ackermann/front_camera/image#' \
-  gui/room_427_camera_view.config > /tmp/ackermann_camera_view.config
-
-gz sim -g \
-  --render-engine-gui-api-backend metal \
-  --gui-config /tmp/ackermann_camera_view.config
+cd /path/to/IE582-Final_Project
+source .venv/bin/activate
+./scripts/run_gazebo_fourth_floor_global_view.sh
 ```
 
-That command reuses the existing camera-view GUI layout and changes only the image topic to the car camera.
+This view is for recording and manually gauging the car in the hallway. It uses only a 3D scene panel, so it does not open the stale Room 427 pan/tilt camera panel.
+It also includes a small `/ackermann/front_camera/image` panel, so a separate camera GUI is not required.
 
-**Terminal 3: drive the car**
-
-The car listens on `/cmd_vel`. Publish repeatedly while you want motion; a single message can be too brief to notice.
-
-Forward:
+**Terminal 3: autonomous hallway driver**
 
 ```bash
-while true; do
-  gz topic -t /cmd_vel -m gz.msgs.Twist \
-    -p 'linear: {x: 0.6}, angular: {z: 0.0}'
-  sleep 0.1
-done
+cd /path/to/IE582-Final_Project
+source .venv/bin/activate
+./scripts/run_gazebo_fourth_floor_hallway_driver.sh --base-speed 0.24
 ```
 
-Forward with a left turn:
+The driver subscribes to the car camera, follows the dark reflective floor corridor, and reverses/turns when the forward floor region shrinks near a wall or door. If the car turns toward the wall instead of away from it, restart the driver with:
+
+```bash
+./scripts/run_gazebo_fourth_floor_hallway_driver.sh --base-speed 0.24 --invert-steering
+```
+
+The car listens on `/cmd_vel`, so you can still publish manual commands if needed. Forward:
 
 ```bash
 while true; do
   gz topic -t /cmd_vel -m gz.msgs.Twist \
-    -p 'linear: {x: 0.4}, angular: {z: 0.5}'
+    -p 'linear: {x: 0.35}, angular: {z: 0.0}'
   sleep 0.1
 done
 ```
 
-Forward with a right turn:
-
-```bash
-while true; do
-  gz topic -t /cmd_vel -m gz.msgs.Twist \
-    -p 'linear: {x: 0.4}, angular: {z: -0.5}'
-  sleep 0.1
-done
-```
-
-Press `Ctrl-C` to stop the loop, then publish a zero command:
+Press `Ctrl-C` to stop a manual loop, then publish a zero command:
 
 ```bash
 gz topic -t /cmd_vel -m gz.msgs.Twist \
@@ -239,6 +229,8 @@ gz topic -f -t /ackermann/front_camera/image
 ```
 
 You should see `/ackermann/front_camera/image` publishing at about 30 FPS.
+
+Do not use `Simulation/gui/room_427_tracking_gui.config` for the fourth-floor recording. That file contains a Room 427 pan/tilt camera panel and can show a blank or stale camera widget.
 
 ## Commands The Camera Understands
 

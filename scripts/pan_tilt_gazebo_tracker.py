@@ -227,14 +227,25 @@ class GazeboPanTiltTracker:
             ) from exc
         return YOLO(self.yolo_model_name)
 
-    def _set_model_pan_pose(self, angle_deg: float) -> None:
+    def _set_model_pose(self, pan_deg: Optional[float] = None, tilt_deg: Optional[float] = None) -> None:
         pose = Pose()
         pose.name = self.gazebo_model_name
         pose.position.x, pose.position.y, pose.position.z = self.model_pose_xyz
 
-        yaw_rad = math.radians(self.model_base_yaw_deg + angle_deg)
-        pose.orientation.w = math.cos(yaw_rad / 2.0)
-        pose.orientation.z = math.sin(yaw_rad / 2.0)
+        pan_angle = self.joint_state["pan_joint"]["angle_deg"] if pan_deg is None else pan_deg
+        tilt_angle = self.joint_state["tilt_joint"]["angle_deg"] if tilt_deg is None else tilt_deg
+
+        yaw_rad = math.radians(self.model_base_yaw_deg + pan_angle)
+        pitch_rad = math.radians(tilt_angle)
+        cy = math.cos(yaw_rad * 0.5)
+        sy = math.sin(yaw_rad * 0.5)
+        cp = math.cos(pitch_rad * 0.5)
+        sp = math.sin(pitch_rad * 0.5)
+
+        pose.orientation.w = cy * cp
+        pose.orientation.x = -sy * sp
+        pose.orientation.y = cy * sp
+        pose.orientation.z = sy * cp
 
         try:
             self.node.request(
@@ -271,8 +282,11 @@ class GazeboPanTiltTracker:
         print(f"[command] {intent.raw_text or command_text} -> {intent}")
 
     def _publish_joint_command(self, joint_name: str, angle_deg: float) -> None:
-        if self.control_mode == "pose" and joint_name == "pan_joint":
-            self._set_model_pan_pose(angle_deg)
+        if self.control_mode == "pose" and joint_name in {"pan_joint", "tilt_joint"}:
+            if joint_name == "pan_joint":
+                self._set_model_pose(pan_deg=angle_deg)
+            else:
+                self._set_model_pose(tilt_deg=angle_deg)
             self.joint_state[joint_name]["angle_deg"] = angle_deg
             return
 
