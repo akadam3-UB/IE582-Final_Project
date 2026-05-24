@@ -407,14 +407,3 @@ The final demo prioritizes reliability over unnecessary complexity:
 ## Fourth Floor Design Note
 
 `Simulation/worlds/fourth_floor.world` contains the larger hallway/car environment. The car demo is separate from the Room 427 pan/tilt tracker: Room 427 moves a fixed ceiling camera, while the fourth-floor demo moves the car itself and views the hallway through the car's front camera.
-
-## Suggested Live Screenshots For Final Submission
-
-Before exporting the final report or PDF, add these real screenshots if time allows:
-
-- Gazebo overview of `room_427.world`.
-- Pan/tilt camera POV window.
-- Terminal output showing a successful `track the red person` run.
-- Terminal output after switching to `track the blue person`.
-
-Place them in `docs/images/` and reference them from this README or the final report. The included layout and pipeline figures already document the system structure; live screenshots add visual proof from a run on your machine.
